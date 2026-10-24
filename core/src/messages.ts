@@ -47,7 +47,8 @@ export type ServerMessage =
   | TerminalAvailability
   | TerminalSessionOpened
   | TerminalSessionClosed
-  | AgentDiagnostics;
+  | AgentDiagnostics
+  | RoomsState;
 
 export type ClientMessage =
   | WebviewReady
@@ -382,6 +383,59 @@ export interface AgentDiagnostics {
   type: 'agentDiagnostics';
   agents: Record<string, any>[];
 }
+
+export interface RoomsState {
+  type: 'roomsState';
+  github: RoomsGithubState;
+  rooms: RoomInfo[];
+  needs: RoomNeed[];
+}
+
+export type RoomsGithubState = 'ok' | 'unavailable' | 'off';
+
+export interface RoomInfo {
+  label: string;
+  project: string;
+  path: string;
+  branch: string | null;
+  pr: RoomPullRequest | null;
+  fields: Record<string, string>;
+  port: number | null;
+  devUrl: string | null;
+  serverUp: boolean;
+}
+
+export interface RoomPullRequest {
+  number: number;
+  title: string;
+  url: string;
+  state: RoomPullRequestState;
+  review: RoomReviewState | null;
+  checks: RoomChecksState | null;
+}
+
+export type RoomPullRequestState = 'open' | 'draft' | 'merged' | 'closed';
+
+export type RoomReviewState = 'approved' | 'changes-requested' | 'review-required';
+
+export type RoomChecksState = 'passing' | 'failing' | 'pending';
+
+export interface RoomNeed {
+  id: string;
+  kind: RoomNeedKind;
+  room: string;
+  title: string;
+  url: string | null;
+  prUrl: string | null;
+}
+
+export type RoomNeedKind =
+  | 'changes-requested'
+  | 'checks-failing'
+  | 'ready-to-merge'
+  | 'stale-worktree'
+  | 'dev-server'
+  | 'field';
 
 export interface WebviewReady {
   type: 'webviewReady';

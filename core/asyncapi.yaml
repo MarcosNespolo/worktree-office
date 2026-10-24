@@ -128,6 +128,8 @@ components:
         - $ref: '#/components/schemas/TerminalSessionClosed'
         # Diagnostics
         - $ref: '#/components/schemas/AgentDiagnostics'
+        # Rooms (worktree-office)
+        - $ref: '#/components/schemas/RoomsState'
       discriminator: type
 
     ClientMessage:
@@ -229,6 +231,122 @@ components:
           type: integer
         directoryName:
           type: string
+
+    RoomsState:
+      description: State of every worktree room, sent when it changes and every few seconds, plus the items that need the user.
+      type: object
+      additionalProperties: false
+      required: [type, github, rooms, needs]
+      properties:
+        type:
+          const: roomsState
+        github:
+          $ref: '#/components/schemas/RoomsGithubState'
+        rooms:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomInfo'
+        needs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoomNeed'
+
+    RoomInfo:
+      description: One git worktree shown as a room.
+      type: object
+      additionalProperties: false
+      required: [label, project, path, branch, pr, fields, port, devUrl, serverUp]
+      properties:
+        label:
+          type: string
+        project:
+          type: string
+        path:
+          type: string
+        branch:
+          type: [string, 'null']
+        pr:
+          oneOf:
+            - $ref: '#/components/schemas/RoomPullRequest'
+            - type: 'null'
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+          description: Extra values read from the pull request, as configured per project.
+        port:
+          type: [integer, 'null']
+        devUrl:
+          type: [string, 'null']
+        serverUp:
+          type: boolean
+
+    RoomPullRequest:
+      description: The pull request of a room's branch.
+      type: object
+      additionalProperties: false
+      required: [number, title, url, state, review, checks]
+      properties:
+        number:
+          type: integer
+        title:
+          type: string
+        url:
+          type: string
+        state:
+          $ref: '#/components/schemas/RoomPullRequestState'
+        review:
+          oneOf:
+            - $ref: '#/components/schemas/RoomReviewState'
+            - type: 'null'
+        checks:
+          oneOf:
+            - $ref: '#/components/schemas/RoomChecksState'
+            - type: 'null'
+
+    RoomNeed:
+      description: Something about a room that needs the user.
+      type: object
+      additionalProperties: false
+      required: [id, kind, room, title, url, prUrl]
+      properties:
+        id:
+          type: string
+        kind:
+          $ref: '#/components/schemas/RoomNeedKind'
+        room:
+          type: string
+        title:
+          type: string
+        url:
+          type: [string, 'null']
+        prUrl:
+          type: [string, 'null']
+
+    RoomsGithubState:
+      description: Whether pull requests could be read through the GitHub CLI.
+      type: string
+      enum: [ok, unavailable, 'off']
+
+    RoomPullRequestState:
+      description: Lifecycle state of a pull request.
+      type: string
+      enum: [open, draft, merged, closed]
+
+    RoomReviewState:
+      description: Review decision of a pull request.
+      type: string
+      enum: [approved, changes-requested, review-required]
+
+    RoomChecksState:
+      description: Combined state of the checks of a pull request.
+      type: string
+      enum: [passing, failing, pending]
+
+    RoomNeedKind:
+      description: Why a room needs the user.
+      type: string
+      enum: [changes-requested, checks-failing, ready-to-merge, stale-worktree, dev-server, field]
 
     AgentSelected:
       description: An agent's terminal was focused (VS Code only). UI should highlight it.

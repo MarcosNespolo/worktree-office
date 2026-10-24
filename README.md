@@ -22,8 +22,8 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] Sessions running inside a worktree sit in its room; everything else waits in the lobby
 - [x] Launching Claude Code into a worktree from the browser, on Windows too
 - [x] Sessions that work on a worktree from outside it, through `git -C` or file edits, move to its room
-- [ ] Door signs with branch, pull request status, checks and dev server port
-- [ ] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
+- [x] Door signs with branch, pull request status, checks and dev server port
+- [x] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
 - [ ] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [ ] A task box that starts new tasks in free worktrees
 - [x] Demo mode with a fictional project
@@ -40,7 +40,7 @@ npm run compile
 node dist/cli.js --port 3100
 ```
 
-Want to look around first? `node dist/cli.js --demo` opens a fictional project with five worktrees and simulated agents. It runs in a temporary folder and never touches your hooks, sessions or settings.
+Want to look around first? `node dist/cli.js --demo` opens a fictional project with six worktrees, simulated agents and fictional pull requests. It runs in a temporary folder and never touches your hooks, sessions or settings.
 
 Open the URL printed in the terminal. It carries an access token, so treat it like a password.
 
@@ -77,6 +77,26 @@ By default, worktree-office watches the git repository it was started in. To wat
 | `followToolPaths` | Set to `false` to stop moving sessions by the paths their tools touch. |
 
 Room names come from the worktree folder without the repository prefix, so `acme-web-fix-login` becomes `fix-login`. The office holds up to 24 rooms. The layout is generated, so edits made in the layout editor are replaced when worktrees change.
+
+### Door signs and the "needs you" panel
+
+Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+
+The "Needs you" panel lists what is waiting on you:
+
+- sessions asking for approval or waiting for your input;
+- pull requests with changes requested, failing checks, or approved and ready to merge;
+- worktrees whose pull request was merged or closed, ready to be released;
+- dev servers still running in a worktree that is free.
+
+These project fields tune the signs and the panel:
+
+| Field       | Meaning                                                                                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github`    | `owner/repo` to read pull requests from, or `false` to skip them. Defaults to the `origin` remote.                                                                                                                    |
+| `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`. |
+| `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value.           |
+| `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                        |
 
 ## Credits
 

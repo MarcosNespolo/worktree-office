@@ -2,6 +2,10 @@ export const ROOMS_CONFIG_FILE_NAME = 'projects.json';
 export const ROOMS_STATE_FILE_NAME = 'rooms-state.json';
 export const ROOMS_POLL_INTERVAL_MS = 5_000;
 export const ROOMS_GIT_TIMEOUT_MS = 15_000;
+export const ROOMS_PR_POLL_MS = 60_000;
+export const ROOMS_PORT_POLL_MS = 5_000;
+export const ROOMS_STATE_BROADCAST_MS = 10_000;
+export const PORT_CHECK_TIMEOUT_MS = 400;
 export const ROOMS_MAX = 24;
 export const ROOMS_MAX_COLUMNS = 6;
 
@@ -84,6 +88,7 @@ export const LOBBY_LOUNGE_OFFSET_COL = 2;
 export const LOBBY_LOUNGE_OFFSET_ROW = 3;
 
 export const DEMO_PROJECT = 'acme-shop';
+export const DEMO_GITHUB_REPO = 'acme/acme-shop';
 export const DEMO_BEAT_MS = 2_500;
 export const DEMO_WORKTREES: ReadonlyArray<{ name: string; branch: string | null }> = [
   { name: 'checkout-redesign', branch: 'feat/checkout-redesign' },
@@ -91,6 +96,7 @@ export const DEMO_WORKTREES: ReadonlyArray<{ name: string; branch: string | null
   { name: 'api-docs', branch: 'docs/api' },
   { name: 'search-filters', branch: 'feat/search-filters' },
   { name: 'release-1-4', branch: null },
+  { name: 'old-banner', branch: 'feat/old-banner' },
 ];
 
 export const FIRST_RUN_SETTINGS = {

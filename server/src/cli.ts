@@ -35,10 +35,12 @@ import { FileStateAdapter } from './fileStateAdapter.js';
 import { setDirectoryNameResolver } from './fileWatcher.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { loadRoomsConfig } from './rooms/config.js';
-import { cleanupDemo, DemoDriver, prepareDemo } from './rooms/demo.js';
+import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
+import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
+import { StatusTracker } from './rooms/status.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
 import { isLoopbackHost, normalizeHostname } from './wsAuth.js';
@@ -420,6 +422,13 @@ async function main(): Promise<void> {
     followSession = (event) => follower.observe(event);
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
+    const status = new StatusTracker(
+      store,
+      rooms,
+      roomsConfig.projects,
+      demo ? demoPullRequests : ghPullRequests,
+    );
+    await status.start();
     const demoDriver = demo
       ? new DemoDriver(demo, (event) => deliverHook(claudeProvider.id, event))
       : null;
@@ -465,6 +474,7 @@ async function main(): Promise<void> {
       // leave a child that ignores SIGHUP orphaned on a dead server.
       await ptyManager.disposeAll();
       demoDriver?.stop();
+      status.stop();
       rooms.stop();
       runtime.dispose();
       server.stop();
