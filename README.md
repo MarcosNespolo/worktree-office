@@ -28,7 +28,10 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
 - [x] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [x] A task box that starts new tasks in free worktrees, with a limit on how many run at once
+- [x] Tokens used by each task
+- [x] System notifications when something new needs you
 - [x] Demo mode with a fictional project
+- [ ] GitLab merge requests
 
 ## Getting started
 
@@ -91,6 +94,8 @@ The "Needs you" panel lists what is waiting on you:
 - worktrees whose pull request was merged or closed, ready to be released;
 - dev servers still running in a worktree that is free.
 
+Click **alerts off** in the panel header to get a system notification whenever a new item shows up while the office tab is not focused. The browser asks for permission the first time.
+
 These project fields tune the signs and the panel:
 
 | Field       | Meaning                                                                                                                                                                                                               |
@@ -128,6 +133,8 @@ Type one or more tasks in the box at the top and press **Start** (or Ctrl+Enter)
 When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option.
 
 A task is done when its session closes.
+
+Each task row shows the tokens its session has used so far: input, cache reads and writes, and output, sub-agents included. It is a measure of usage, not a price.
 
 | Field               | Meaning                                                                                                                                                                                                                                                                         |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
