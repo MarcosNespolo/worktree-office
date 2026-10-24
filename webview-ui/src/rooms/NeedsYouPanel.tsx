@@ -8,8 +8,23 @@ import { collectAgentNeeds } from './agentNeeds.js';
 import { requestRelease } from './releaseStore.js';
 import { useRoomsState } from './roomsStore.js';
 import { sendToAgent, useTasksState } from './tasksStore.js';
+import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
+
+const NOTIFY_LABEL: Record<NotifyState, string> = {
+  unsupported: '',
+  blocked: 'alerts blocked',
+  off: 'alerts off',
+  on: 'alerts on',
+};
+
+const NOTIFY_HINT: Record<NotifyState, string> = {
+  unsupported: '',
+  blocked: 'Notifications are blocked for this page in the browser settings.',
+  off: 'Get a system notification when something new needs you and this tab is not focused.',
+  on: 'System notifications are on. Click to turn them off.',
+};
 
 interface NeedsYouPanelProps {
   officeState: OfficeState;
@@ -91,7 +106,6 @@ export function NeedsYouPanel({
   const { needs, github, rooms } = useRoomsState();
   const { tasks } = useTasksState();
   const [open, setOpen] = useState(true);
-  if (rooms.length === 0 && agents.length === 0) return null;
   const agentNeeds = collectAgentNeeds(
     officeState,
     agents,
@@ -105,6 +119,20 @@ export function NeedsYouPanel({
       task.agentId !== null &&
       !agentNeeds.some((need) => need.id === task.agentId),
   );
+  const notify = useNeedNotifications([
+    ...agentNeeds.map((need) => ({
+      key: `agent:${need.id}:${need.title}`,
+      title: need.title,
+      body: need.room,
+    })),
+    ...blockedTasks.map((task) => ({
+      key: `task:${task.id}`,
+      title: task.detail,
+      body: task.room ?? task.title,
+    })),
+    ...needs.map((need) => ({ key: need.id, title: need.title, body: need.room })),
+  ]);
+  if (rooms.length === 0 && agents.length === 0) return null;
   const total = agentNeeds.length + blockedTasks.length + needs.length;
 
   const focus = (id: number): void => {
@@ -117,14 +145,35 @@ export function NeedsYouPanel({
       className="absolute top-8 right-8 z-20 w-[380px] pixel-panel flex flex-col"
       data-testid="needs-you-panel"
     >
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        className="flex items-center justify-between px-10 py-6 bg-transparent border-0 text-text text-lg cursor-pointer"
-      >
-        <span>{total > 0 ? `Needs you (${total})` : 'Needs you'}</span>
-        <span className="text-sm text-text-muted">{open ? 'hide' : 'show'}</span>
-      </button>
+      <div className="flex items-center gap-10 px-10 py-6">
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="flex-1 text-left p-0 bg-transparent border-0 text-text text-lg cursor-pointer"
+        >
+          {total > 0 ? `Needs you (${total})` : 'Needs you'}
+        </button>
+        {notify.state !== 'unsupported' && (
+          <button
+            type="button"
+            onClick={notify.toggle}
+            title={NOTIFY_HINT[notify.state]}
+            className={`p-0 bg-transparent border-0 text-sm cursor-pointer ${
+              notify.state === 'on' ? 'text-accent-bright' : 'text-text-muted'
+            }`}
+            data-testid="needs-you-notify"
+          >
+            {NOTIFY_LABEL[notify.state]}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen((value) => !value)}
+          className="p-0 bg-transparent border-0 text-sm text-text-muted cursor-pointer"
+        >
+          {open ? 'hide' : 'show'}
+        </button>
+      </div>
       {open && (
         <div className="max-h-[50vh] overflow-y-auto pixel-scrollbar border-t-2 border-border">
           {total === 0 && (

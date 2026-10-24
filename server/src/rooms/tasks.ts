@@ -24,6 +24,7 @@ import type { RoomsManager } from './manager.js';
 import { type Room, samePath } from './rooms.js';
 import { portFor } from './status.js';
 import { splitTasks } from './taskText.js';
+import { UsageMeter } from './usage.js';
 
 export type TaskStatus =
   'queued' | 'preparing' | 'starting' | 'blocked' | 'running' | 'done' | 'failed';
@@ -37,6 +38,7 @@ export interface TaskInfo {
   agentId: number | null;
   status: TaskStatus;
   detail: string;
+  tokens: number;
 }
 
 export interface TasksSnapshot {
@@ -127,6 +129,8 @@ export class TaskRunner {
   private splitting = false;
   private dispatching = false;
   private readonly timer: ReturnType<typeof setInterval>;
+  private readonly usage = new UsageMeter();
+  private readonly transcripts = new Map<string, Set<string>>();
 
   constructor(private readonly deps: TaskRunnerDeps) {
     deps.store.on('agentRemoved', (id) => this.agentGone(id));
@@ -139,6 +143,7 @@ export class TaskRunner {
   }
 
   snapshot(): TasksSnapshot {
+    for (const task of this.tasks) this.countTokens(task);
     return {
       type: 'tasksState',
       tasks: this.tasks.map((task) => ({ ...task })),
@@ -150,6 +155,17 @@ export class TaskRunner {
 
   publish(): void {
     this.deps.store.broadcast(this.snapshot() as unknown as Record<string, unknown>);
+  }
+
+  private countTokens(task: TaskInfo): void {
+    const agent = task.agentId === null ? undefined : this.deps.store.get(task.agentId);
+    const files = this.transcripts.get(task.id) ?? new Set<string>();
+    if (agent?.jsonlFile) files.add(agent.jsonlFile);
+    if (files.size === 0) return;
+    this.transcripts.set(task.id, files);
+    let total = 0;
+    for (const file of files) total += this.usage.tokens(file);
+    task.tokens = total;
   }
 
   async add(text: string): Promise<number> {
@@ -170,6 +186,7 @@ export class TaskRunner {
           agentId: null,
           status: 'queued',
           detail: '',
+          tokens: 0,
         });
         added++;
       }
@@ -185,6 +202,7 @@ export class TaskRunner {
     const task = this.tasks.find((candidate) => candidate.id === id);
     if (!task || ACTIVE.has(task.status)) return;
     this.tasks = this.tasks.filter((candidate) => candidate.id !== id);
+    this.transcripts.delete(id);
     this.publish();
   }
 
@@ -258,6 +276,7 @@ export class TaskRunner {
     if (excess > 0) {
       const drop = new Set(finished.slice(0, excess).map((task) => task.id));
       this.tasks = this.tasks.filter((task) => !drop.has(task.id));
+      for (const id of drop) this.transcripts.delete(id);
     }
   }
 

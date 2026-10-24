@@ -24,6 +24,12 @@ const STATUS_TONE: Record<TaskStatus, string> = {
   failed: 'text-danger',
 };
 
+function formatTokens(tokens: number): string {
+  if (tokens < 1_000) return `${tokens} tok`;
+  if (tokens < 1_000_000) return `${(tokens / 1_000).toFixed(tokens < 10_000 ? 1 : 0)}k tok`;
+  return `${(tokens / 1_000_000).toFixed(1)}M tok`;
+}
+
 export function TaskBox() {
   const { tasks, maxActive, active, splitting } = useTasksState();
   const [text, setText] = useState('');
@@ -96,6 +102,15 @@ export function TaskBox() {
               >
                 {task.title}
               </span>
+              {task.tokens > 0 && (
+                <span
+                  className="shrink-0 text-text-muted"
+                  title="Tokens processed by this task's sessions (input, cache and output)"
+                  data-testid="task-tokens"
+                >
+                  {formatTokens(task.tokens)}
+                </span>
+              )}
               <span
                 className="shrink-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-text-muted"
                 title={task.detail}
