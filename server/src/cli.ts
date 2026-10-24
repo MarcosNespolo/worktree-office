@@ -36,6 +36,7 @@ import { setDirectoryNameResolver } from './fileWatcher.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { loadRoomsConfig } from './rooms/config.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
+import { SessionFollower } from './rooms/follow.js';
 import { RoomsManager } from './rooms/manager.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
@@ -252,9 +253,12 @@ async function main(): Promise<void> {
     // Create runtime first (before server.start, so we can pass it in)
     const runtime = new AgentRuntime(store, claudeProvider);
 
+    let followSession: (event: Record<string, unknown>) => void = () => {};
+
     // Wire hook events: HTTP POST -> runtime -> hookEventHandler -> agents
     server.onHookEvent((providerId, event) => {
       runtime.handleHookEvent(providerId, event);
+      followSession(event);
     });
 
     // onSetHooksEnabled side effect: install/uninstall the named provider's
@@ -402,6 +406,8 @@ async function main(): Promise<void> {
     const roomsConfig = await loadRoomsConfig(process.cwd());
     const rooms = new RoomsManager(store, roomsConfig.projects);
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
+    const follower = new SessionFollower(store, rooms);
+    followSession = (event) => follower.observe(event);
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
 

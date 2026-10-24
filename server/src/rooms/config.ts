@@ -13,6 +13,7 @@ export interface ProjectConfig {
   include: string[];
   exclude: string[];
   includeMain: boolean;
+  followToolPaths: boolean;
 }
 
 export interface RoomsConfig {
@@ -45,6 +46,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
     include: stringList(obj.include),
     exclude: stringList(obj.exclude),
     includeMain: obj.includeMain === true,
+    followToolPaths: obj.followToolPaths !== false,
   };
 }
 
@@ -74,10 +76,6 @@ export async function loadRoomsConfig(startDir: string): Promise<RoomsConfig> {
   }
   const top = await repositoryTopLevel(startDir);
   if (!top) return { projects: [], source: 'none' };
-  return {
-    projects: [
-      { name: path.basename(top), root: top, include: [], exclude: [], includeMain: false },
-    ],
-    source: 'start-directory',
-  };
+  const project = parseProject({ root: top });
+  return { projects: project ? [project] : [], source: 'start-directory' };
 }
