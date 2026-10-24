@@ -2,7 +2,7 @@ import fastifyCors from '@fastify/cors';
 import fastifyStatic from '@fastify/static';
 import fastifyWebsocket from '@fastify/websocket';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import Fastify from 'fastify';
+import Fastify, { LogController } from 'fastify';
 
 import type { AgentRuntime } from './agentRuntime.js';
 import type { AgentStateStore } from './agentStateStore.js';
@@ -89,7 +89,9 @@ export async function createHttpServer(options: HttpServerOptions): Promise<Http
     // is written -- otherwise every (re)connect would put the secret in stdout
     // and any log file (see wsAuth.redactTokenQuery).
     logger: options.embedded ? false : { serializers: { req: serializeRequestForLog } },
-    disableRequestLogging: process.env.PIXEL_AGENTS_DEBUG !== '1',
+    logController: new LogController({
+      disableRequestLogging: process.env.PIXEL_AGENTS_DEBUG !== '1',
+    }),
     bodyLimit: MAX_HOOK_BODY_SIZE,
   });
 
