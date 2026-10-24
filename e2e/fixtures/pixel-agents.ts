@@ -66,9 +66,9 @@ function removeDirIfExists(dirPath: string | undefined): void {
 export const test = base.extend<{
   pixelAgents: PixelAgentsContext;
   _allureLabels: void;
-  /** Pre-seed `~/.pixel-agents/config.json` (e.g. areaMappings, showAreas). */
+  /** Pre-seed `~/.worktree-office/config.json` (e.g. areaMappings, showAreas). */
   seedConfig: unknown;
-  /** Pre-seed `~/.pixel-agents/layout.json` (must carry a high layoutRevision). */
+  /** Pre-seed `~/.worktree-office/layout.json` (must carry a high layoutRevision). */
   seedLayout: unknown;
   /** Pre-seed `~/.claude/settings.json` (e.g. an existing hook install). */
   seedClaudeSettings: unknown;
@@ -161,7 +161,7 @@ export const test = base.extend<{
         await attachTextFileIfExists(
           testInfo,
           'server-json',
-          path.join(tmpHome, '.pixel-agents', 'server.json'),
+          path.join(tmpHome, '.worktree-office', 'server.json'),
           'application/json',
         );
         // Diagnostic: server-side hook/broadcast log (gated by PIXEL_AGENTS_DEBUG_LOG
@@ -170,7 +170,7 @@ export const test = base.extend<{
         await attachTextFileIfExists(
           testInfo,
           'pixel-agents-debug-log',
-          path.join(tmpHome, '.pixel-agents', 'debug.log'),
+          path.join(tmpHome, '.worktree-office', 'debug.log'),
           'text/plain',
         );
         // Webview-side counterpart: every transport message the webview's

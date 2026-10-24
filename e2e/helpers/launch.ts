@@ -41,9 +41,9 @@ export interface LaunchOptions {
    * (single-folder default is unchanged).
    */
   workspaceFolders?: string[];
-  /** Pre-seed `~/.pixel-agents/config.json` (written before the server reads it). */
+  /** Pre-seed `~/.worktree-office/config.json` (written before the server reads it). */
   seedConfig?: unknown;
-  /** Pre-seed `~/.pixel-agents/layout.json` (written before the panel loads). */
+  /** Pre-seed `~/.worktree-office/layout.json` (written before the panel loads). */
   seedLayout?: unknown;
   /**
    * Pre-seed `~/.claude/settings.json` (written before the extension activates).
@@ -79,7 +79,7 @@ export async function launchVSCode(
   fs.mkdirSync(mockBinDir, { recursive: true });
 
   // Pre-seed user-level config/layout under the isolated HOME, BEFORE VS Code
-  // launches — the server reads ~/.pixel-agents/{config,layout}.json on startup,
+  // launches — the server reads ~/.worktree-office/{config,layout}.json on startup,
   // so a test that needs specific areaMappings / showAreas / a known layout must
   // write them now. layout.json must carry a high layoutRevision to survive the
   // bundled-default reset gate (server/src/layoutPersistence.ts).
@@ -92,7 +92,7 @@ export async function launchVSCode(
   // workspace folder's drawer row. Missing keys are filled with product defaults
   // by server/src/configPersistence.ts. Tests override via opts.seedConfig
   // (buildSeedConfig in layout-seed.ts carries the same baseline).
-  const paDir = path.join(tmpHome, '.pixel-agents');
+  const paDir = path.join(tmpHome, '.worktree-office');
   fs.mkdirSync(paDir, { recursive: true });
   // The granted hooksConsent entry is part of the baseline: without it the first-run consent
   // dialog pops up inside the webview on open, gating hook installation and
@@ -276,7 +276,7 @@ export async function launchVSCode(
           // path must be set explicitly here or the mock-spawned
           // claude-hook.js (which runs in this terminal) can't write to
           // it. Path matches the `debugLogFile` const below.
-          PIXEL_AGENTS_DEBUG_LOG: path.join(tmpHome, '.pixel-agents', 'debug.log'),
+          PIXEL_AGENTS_DEBUG_LOG: path.join(tmpHome, '.worktree-office', 'debug.log'),
           // Narration log paths for the mock-claude wrapper's background tail
           // (see e2e/fixtures/mock-claude). inheritEnv:false means these must
           // be set on the profile too, or internal mock tabs are silently
@@ -328,7 +328,7 @@ export async function launchVSCode(
   // attaches it as `pixel-agents-debug-log` so CI failure analysis can read
   // the exact event timeline. Per-test isolated under tmpHome so parallel
   // workers don't interleave (though e2e uses workers=1 anyway).
-  const debugLogFile = path.join(tmpHome, '.pixel-agents', 'debug.log');
+  const debugLogFile = path.join(tmpHome, '.worktree-office', 'debug.log');
   fs.mkdirSync(path.dirname(debugLogFile), { recursive: true });
 
   const env: Record<string, string> = {

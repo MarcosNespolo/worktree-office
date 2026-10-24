@@ -108,9 +108,9 @@ async function verifyInstalledTarball(tarballPath) {
   // gate's own behavior is pinned by server/__tests__/cli.test.ts,
   // consentFlow.test.ts, and the consent e2e specs). Same shape as
   // server/__tests__/cli.test.ts.
-  fs.mkdirSync(path.join(smokeHome, '.pixel-agents'), { recursive: true });
+  fs.mkdirSync(path.join(smokeHome, '.worktree-office'), { recursive: true });
   fs.writeFileSync(
-    path.join(smokeHome, '.pixel-agents', 'config.json'),
+    path.join(smokeHome, '.worktree-office', 'config.json'),
     JSON.stringify({ hooksConsent: { claude: 'granted' } }),
   );
   fs.writeFileSync(
@@ -201,7 +201,7 @@ async function verifyInstalledTarball(tarballPath) {
       throw new Error(`Installed package did not load non-empty bundled assets:\n${output}`);
     }
 
-    const installedHook = path.join(smokeHome, '.pixel-agents', 'hooks', 'claude-hook.js');
+    const installedHook = path.join(smokeHome, '.worktree-office', 'hooks', 'claude-hook.js');
     const settingsPath = path.join(smokeHome, '.claude', 'settings.json');
     await waitFor(
       () => fs.existsSync(installedHook) && fs.existsSync(settingsPath),
