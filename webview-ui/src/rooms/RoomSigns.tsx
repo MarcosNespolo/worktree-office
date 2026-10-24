@@ -4,6 +4,7 @@ import type { RoomInfo } from '../../../core/src/messages.js';
 import { TILE_SIZE } from '../constants.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { overlayProjection } from '../office/projection.js';
+import { requestRelease, useReleaseState } from './releaseStore.js';
 import { areaBounds } from './roomGeometry.js';
 import { useRoomsState } from './roomsStore.js';
 
@@ -44,6 +45,7 @@ const CHECKS: Record<string, { text: string; tone: string }> = {
 
 export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSignsProps) {
   const { rooms } = useRoomsState();
+  const { busy } = useReleaseState();
   const [, setTick] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -121,8 +123,20 @@ export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSigns
                     </span>
                   ))}
               </div>
-              <div className="text-2xs leading-none text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
-                {room.branch ?? 'detached'}
+              <div className="flex items-center gap-8 text-2xs leading-none">
+                <span className="flex-1 min-w-0 text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
+                  {room.branch ?? 'detached'}
+                </span>
+                <button
+                  type="button"
+                  disabled={busy !== null}
+                  onClick={() => requestRelease(room.label)}
+                  title={`Release ${room.label}`}
+                  className="pointer-events-auto shrink-0 bg-transparent border-0 p-0 text-2xs leading-none text-accent-bright hover:text-accent cursor-pointer disabled:opacity-(--btn-disabled-opacity) disabled:cursor-default"
+                  data-testid="room-release"
+                >
+                  {busy === room.label ? 'releasing' : 'release'}
+                </button>
               </div>
             </div>
           </div>

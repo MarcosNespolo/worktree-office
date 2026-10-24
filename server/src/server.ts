@@ -17,7 +17,7 @@ import {
   SERVER_REGISTRY_PROTOCOL_VERSION,
   SERVERS_DIR,
 } from './constants.js';
-import { createHttpServer } from './httpServer.js';
+import { createHttpServer, type ExtraClientMessageHandler } from './httpServer.js';
 import type { ServerConfig, StandaloneAccess } from './serverConfig.js';
 import { isServerConfig, isServerTarget, sameStandaloneAccess } from './serverConfig.js';
 import { loadOrCreateStandaloneToken } from './serverToken.js';
@@ -79,6 +79,7 @@ export class PixelAgentsServer {
      *  the old one. Refused while another standalone server is running: it
      *  would keep honouring the old token until it restarts. */
     rotateToken?: boolean;
+    onExtraClientMessage?: ExtraClientMessageHandler;
   }): Promise<ServerConfig> {
     const embedded = options?.embedded ?? true;
     const wantsSpa = !embedded;
@@ -144,6 +145,7 @@ export class PixelAgentsServer {
       onReloadAssets: options?.onReloadAssets,
       ptyManager: options?.ptyManager,
       allowedHosts: standalone?.allowedHosts,
+      onExtraClientMessage: options?.onExtraClientMessage,
     });
 
     this.app = app;

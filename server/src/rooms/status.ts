@@ -203,6 +203,16 @@ export class StatusTracker {
     this.timers.length = 0;
   }
 
+  infoFor(label: string): RoomInfo | null {
+    const room = this.rooms.current.find((candidate) => candidate.label === label);
+    return room ? this.describe(room) : null;
+  }
+
+  async refreshNow(): Promise<void> {
+    await Promise.all([this.refreshPullRequests(), this.refreshPorts()]);
+    this.publish(true);
+  }
+
   snapshot(): RoomsSnapshot {
     const rooms = this.rooms.current.map((room) => this.describe(room));
     const needs = rooms.flatMap((info) =>

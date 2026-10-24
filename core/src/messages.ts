@@ -48,7 +48,8 @@ export type ServerMessage =
   | TerminalSessionOpened
   | TerminalSessionClosed
   | AgentDiagnostics
-  | RoomsState;
+  | RoomsState
+  | ReleaseResult;
 
 export type ClientMessage =
   | WebviewReady
@@ -77,7 +78,8 @@ export type ClientMessage =
   | SaveDirectory
   | RemoveDirectory
   | RequestDirectorySuggestions
-  | RequestDiagnostics;
+  | RequestDiagnostics
+  | ReleaseRoom;
 
 export interface ProviderCapabilities {
   type: 'providerCapabilities';
@@ -437,6 +439,17 @@ export type RoomNeedKind =
   | 'dev-server'
   | 'field';
 
+export interface ReleaseResult {
+  type: 'releaseResult';
+  label: string;
+  ok: boolean;
+  needs: ReleaseNeed | null;
+  message: string;
+  files: string[];
+}
+
+export type ReleaseNeed = 'open-pr' | 'agents' | 'dirty';
+
 export interface WebviewReady {
   type: 'webviewReady';
 }
@@ -575,4 +588,12 @@ export interface RequestDirectorySuggestions {
 
 export interface RequestDiagnostics {
   type: 'requestDiagnostics';
+}
+
+export interface ReleaseRoom {
+  type: 'releaseRoom';
+  label: string;
+  confirmOpenPr?: boolean;
+  confirmAgents?: boolean;
+  confirmDirty?: boolean;
 }

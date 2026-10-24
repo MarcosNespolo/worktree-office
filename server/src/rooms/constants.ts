@@ -6,6 +6,9 @@ export const ROOMS_PR_POLL_MS = 60_000;
 export const ROOMS_PORT_POLL_MS = 5_000;
 export const ROOMS_STATE_BROADCAST_MS = 10_000;
 export const PORT_CHECK_TIMEOUT_MS = 400;
+export const RELEASE_COMMAND_TIMEOUT_MS = 60_000;
+export const RELEASE_LOG_FILE_NAME = 'release.log';
+export const RELEASE_MAX_LISTED_FILES = 20;
 export const ROOMS_MAX = 24;
 export const ROOMS_MAX_COLUMNS = 6;
 

@@ -60,7 +60,13 @@ export interface HttpServerOptions {
    *  privileged standalone handshake may arrive under -- e.g. a reverse proxy's
    *  public name. See wsAuth.privilegedHostnames. */
   allowedHosts?: readonly string[];
+  onExtraClientMessage?: ExtraClientMessageHandler;
 }
+
+export type ExtraClientMessageHandler = (
+  msg: Record<string, unknown>,
+  reply: (message: Record<string, unknown>) => void,
+) => boolean;
 
 /** Result of createHttpServer(). */
 export interface HttpServerHandle {
@@ -254,6 +260,9 @@ function registerWebSocketRoute(
         const msg = JSON.parse(data.toString()) as Record<string, unknown>;
         if (!options.embedded && msg.type) {
           console.log('[Pixel Agents] WS client message:', msg.type);
+        }
+        if (privileged && options.onExtraClientMessage?.(msg, (m) => safeSend(socket, m))) {
+          return;
         }
         handleClientMessage(msg, (m) => safeSend(socket, m), {
           store,
