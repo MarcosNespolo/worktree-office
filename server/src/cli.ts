@@ -32,7 +32,11 @@ import {
   WILDCARD_HOSTNAMES,
 } from './constants.js';
 import { FileStateAdapter } from './fileStateAdapter.js';
+import { setDirectoryNameResolver } from './fileWatcher.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
+import { loadRoomsConfig } from './rooms/config.js';
+import { applyFirstRunSettings } from './rooms/firstRun.js';
+import { RoomsManager } from './rooms/manager.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
 import { isLoopbackHost, normalizeHostname } from './wsAuth.js';
@@ -203,6 +207,8 @@ async function main(): Promise<void> {
     console.error(`[Pixel Agents] ${err instanceof Error ? err.message : String(err)}`);
     process.exit(1);
   }
+
+  applyFirstRunSettings();
 
   // dist/ contains both the CLI bundle and the assets/ + webview/ directories
   const distRoot = __dirname;
@@ -393,6 +399,12 @@ async function main(): Promise<void> {
       );
     }
 
+    const roomsConfig = await loadRoomsConfig(process.cwd());
+    const rooms = new RoomsManager(store, roomsConfig.projects);
+    setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
+    await rooms.start();
+    console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
+
     // Start scanning for external sessions (Claude running in user's terminal)
     const cwd = process.cwd();
     const dirs = claudeProvider.getSessionDirs?.(cwd);
@@ -427,6 +439,7 @@ async function main(): Promise<void> {
       // wait for them: exiting now would cancel the SIGKILL escalation and
       // leave a child that ignores SIGHUP orphaned on a dead server.
       await ptyManager.disposeAll();
+      rooms.stop();
       runtime.dispose();
       server.stop();
       process.exit(0);

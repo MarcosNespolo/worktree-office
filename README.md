@@ -18,9 +18,10 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 
 ## Roadmap
 
-- [ ] One room per git worktree, kept in sync as worktrees come and go
-- [ ] Sessions seated in the room of the worktree they work on
-- [ ] Launching Claude Code into a worktree from the browser, on Windows too
+- [x] One room per git worktree, kept in sync as worktrees come and go
+- [x] Sessions running inside a worktree sit in its room; everything else waits in the lobby
+- [x] Launching Claude Code into a worktree from the browser, on Windows too
+- [ ] Following sessions that work on a worktree from outside it
 - [ ] Door signs with branch, pull request status, checks and dev server port
 - [ ] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
 - [ ] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
@@ -44,6 +45,33 @@ Open the URL printed in the terminal. It carries an access token, so treat it li
 On first run, the office asks for permission to add hooks to `~/.claude/settings.json`, so it can follow your sessions as they happen. You can remove them anytime from Settings.
 
 worktree-office keeps its data in `~/.worktree-office/`, separate from Pixel Agents, so both can be installed side by side.
+
+## Configuration
+
+By default, worktree-office watches the git repository it was started in. To watch other repositories, or several at once, create `~/.worktree-office/projects.json`:
+
+```json
+{
+  "projects": [
+    {
+      "name": "acme-web",
+      "root": "~/code/acme-web",
+      "include": ["~/code/acme-web-*"],
+      "exclude": ["~/code/acme-web-scratch"]
+    }
+  ]
+}
+```
+
+| Field         | Meaning                                                             |
+| ------------- | ------------------------------------------------------------------- |
+| `name`        | Project name used in logs. Defaults to the folder name.             |
+| `root`        | Any checkout of the repository. Its worktrees become rooms.         |
+| `include`     | Optional globs. When present, only matching worktrees become rooms. |
+| `exclude`     | Optional globs. Matching worktrees never become rooms.              |
+| `includeMain` | Set to `true` to give the main checkout a room too.                 |
+
+Room names come from the worktree folder without the repository prefix, so `acme-web-fix-login` becomes `fix-login`. The office holds up to 24 rooms. The layout is generated, so edits made in the layout editor are replaced when worktrees change.
 
 ## Credits
 
