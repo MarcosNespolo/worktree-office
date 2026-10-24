@@ -35,6 +35,7 @@ import { FileStateAdapter } from './fileStateAdapter.js';
 import { setDirectoryNameResolver } from './fileWatcher.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { loadRoomsConfig } from './rooms/config.js';
+import { cleanupDemo, DemoDriver, prepareDemo } from './rooms/demo.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { RoomsManager } from './rooms/manager.js';
@@ -58,6 +59,7 @@ export interface CliArgs {
   allowedHosts: string[];
   /** --rotate-token: replace the persisted server token before starting. */
   rotateToken: boolean;
+  demo?: boolean;
 }
 
 /** Thrown by parseArgs on an invalid --port. Kept separate from process.exit so
@@ -107,6 +109,8 @@ export function parseArgs(argv: string[]): CliArgs {
       args.rotateToken = true;
     } else if (argv[i] === '--no-terminal') {
       args.terminal = false;
+    } else if (argv[i] === '--demo') {
+      args.demo = true;
     } else if (argv[i] === '--help') {
       console.log(`Usage: worktree-office [options]
 
@@ -120,6 +124,8 @@ Options:
                         old one (bookmarks, other devices) stops working
   --no-terminal         Disable the embedded terminal (watch agents only; no
                         launching or attaching from the browser)
+  --demo                Show a fictional project with simulated agents. Runs
+                        in a temporary folder and never touches your data
   --help                Show this help message`);
       process.exit(0);
     }
@@ -209,7 +215,10 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const demo = args.demo ? await prepareDemo() : null;
+  if (demo) process.chdir(demo.repo);
   applyFirstRunSettings();
+  if (demo) grantHooksConsent(claudeProvider.id);
 
   // dist/ contains both the CLI bundle and the assets/ + webview/ directories
   const distRoot = __dirname;
@@ -254,12 +263,13 @@ async function main(): Promise<void> {
     const runtime = new AgentRuntime(store, claudeProvider);
 
     let followSession: (event: Record<string, unknown>) => void = () => {};
-
-    // Wire hook events: HTTP POST -> runtime -> hookEventHandler -> agents
-    server.onHookEvent((providerId, event) => {
+    const deliverHook = (providerId: string, event: Record<string, unknown>): void => {
       runtime.handleHookEvent(providerId, event);
       followSession(event);
-    });
+    };
+
+    // Wire hook events: HTTP POST -> runtime -> hookEventHandler -> agents
+    server.onHookEvent(deliverHook);
 
     // onSetHooksEnabled side effect: install/uninstall the named provider's
     // hooks when the user toggles in the UI (or answers the consent ask).
@@ -410,6 +420,15 @@ async function main(): Promise<void> {
     followSession = (event) => follower.observe(event);
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
+    const demoDriver = demo
+      ? new DemoDriver(demo, (event) => deliverHook(claudeProvider.id, event))
+      : null;
+    demoDriver?.start();
+    if (demo) {
+      console.log(
+        `[worktree-office] Demo mode: fictional project in ${demo.base}. Nothing outside it is read or changed.`,
+      );
+    }
 
     // Start scanning for external sessions (Claude running in user's terminal)
     const cwd = process.cwd();
@@ -445,9 +464,11 @@ async function main(): Promise<void> {
       // wait for them: exiting now would cancel the SIGKILL escalation and
       // leave a child that ignores SIGHUP orphaned on a dead server.
       await ptyManager.disposeAll();
+      demoDriver?.stop();
       rooms.stop();
       runtime.dispose();
       server.stop();
+      if (demo) cleanupDemo(demo);
       process.exit(0);
     }
 

@@ -26,7 +26,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [ ] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
 - [ ] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [ ] A task box that starts new tasks in free worktrees
-- [ ] Demo mode with a fictional project
+- [x] Demo mode with a fictional project
 
 ## Getting started
 
@@ -39,6 +39,8 @@ npm install
 npm run compile
 node dist/cli.js --port 3100
 ```
+
+Want to look around first? `node dist/cli.js --demo` opens a fictional project with five worktrees and simulated agents. It runs in a temporary folder and never touches your hooks, sessions or settings.
 
 Open the URL printed in the terminal. It carries an access token, so treat it like a password.
 
