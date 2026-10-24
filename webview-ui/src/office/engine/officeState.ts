@@ -16,6 +16,7 @@ import {
   PET_HIT_HEIGHT,
   WAITING_BUBBLE_DURATION_SEC,
 } from '../../constants.js';
+import { groupTilesByZone, type ZoneTile } from '../../rooms/zones.js';
 import { getAnimationFrames, getCatalogEntry, getOnStateType } from '../layout/furnitureCatalog.js';
 import {
   createDefaultLayout,
@@ -58,6 +59,7 @@ export class OfficeState {
   blockedTiles: Set<string>;
   furniture: FurnitureInstance[];
   walkableTiles: Array<{ col: number; row: number }>;
+  private wanderTilesByZone = new Map<string | null, ZoneTile[]>();
   characters: Map<number, Character> = new Map();
   pets: Pet[] = [];
   /** Accumulated time for furniture animation frame cycling */
@@ -128,6 +130,7 @@ export class OfficeState {
     this.blockedTiles = getBlockedTiles(this.layout.furniture);
     this.furniture = layoutToFurnitureInstances(this.layout.furniture);
     this.walkableTiles = getWalkableTiles(this.tileMap, this.blockedTiles);
+    this.wanderTilesByZone = groupTilesByZone(this.walkableTiles, this.layout);
     // Pets are built last because they need walkableTiles populated for spawn.
     this.rebuildPetsFromLayout(this.layout);
   }
@@ -141,6 +144,7 @@ export class OfficeState {
     this.blockedTiles = getBlockedTiles(layout.furniture);
     this.rebuildFurnitureInstances();
     this.walkableTiles = getWalkableTiles(this.tileMap, this.blockedTiles);
+    this.wanderTilesByZone = groupTilesByZone(this.walkableTiles, layout);
 
     // Shift character positions when grid expands left/up
     if (shift && (shift.col !== 0 || shift.row !== 0)) {
@@ -674,6 +678,24 @@ export class OfficeState {
     }
   }
 
+  moveAgentToDirectory(agentId: number, directoryName: string): void {
+    const ch = this.characters.get(agentId);
+    if (!ch || ch.isSubagent) return;
+    ch.directoryName = directoryName;
+    const wanted = this.areaMappings[directoryName] ?? [];
+    const zone = ch.seatId ? this.seatZone(ch.seatId) : null;
+    const fits = wanted.length > 0 ? zone !== null && wanted.includes(zone) : zone === null;
+    if (fits && ch.seatId) return;
+    const seatId = this.findFreeSeat(directoryName);
+    if (seatId) this.reassignSeat(agentId, seatId);
+  }
+
+  private wanderTilesFor(ch: Character): ZoneTile[] {
+    const zone = ch.seatId ? this.seatZone(ch.seatId) : null;
+    const tiles = this.wanderTilesByZone.get(zone);
+    return tiles && tiles.length > 0 ? tiles : this.walkableTiles;
+  }
+
   /** Send an agent back to their currently assigned seat */
   sendToSeat(agentId: number): void {
     const ch = this.characters.get(agentId);
@@ -1147,7 +1169,14 @@ export class OfficeState {
 
       // Temporarily unblock own seat so character can pathfind to it
       this.withOwnSeatUnblocked(ch, () =>
-        updateCharacter(ch, dt, this.walkableTiles, this.seats, this.tileMap, this.blockedTiles),
+        updateCharacter(
+          ch,
+          dt,
+          this.wanderTilesFor(ch),
+          this.seats,
+          this.tileMap,
+          this.blockedTiles,
+        ),
       );
 
       // Tick bubble timer for waiting bubbles

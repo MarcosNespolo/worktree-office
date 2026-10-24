@@ -82,6 +82,7 @@ components:
         # Agent lifecycle
         - $ref: '#/components/schemas/AgentCreated'
         - $ref: '#/components/schemas/AgentClosed'
+        - $ref: '#/components/schemas/AgentDirectoryChanged'
         - $ref: '#/components/schemas/AgentSelected'
         - $ref: '#/components/schemas/ExistingAgents'
         # Agent status / tool activity
@@ -215,6 +216,19 @@ components:
           const: agentClosed
         id:
           type: integer
+
+    AgentDirectoryChanged:
+      description: An agent now belongs to another Directory, such as the git worktree it works on. The office moves it to a seat in that Directory's Area.
+      type: object
+      additionalProperties: false
+      required: [type, id, directoryName]
+      properties:
+        type:
+          const: agentDirectoryChanged
+        id:
+          type: integer
+        directoryName:
+          type: string
 
     AgentSelected:
       description: An agent's terminal was focused (VS Code only). UI should highlight it.

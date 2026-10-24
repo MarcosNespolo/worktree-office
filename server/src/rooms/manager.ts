@@ -91,6 +91,14 @@ export class RoomsManager {
     return this.roomFor(cwd)?.label ?? directoryNameFor(cwd);
   }
 
+  projectOf(room: Room): ProjectConfig | undefined {
+    return this.projects.find((project) => project.name === room.project);
+  }
+
+  followsToolPaths(room: Room): boolean {
+    return this.projectOf(room)?.followToolPaths ?? true;
+  }
+
   describe(source: RoomsConfig['source']): string {
     if (!this.enabled) {
       return 'No git project found: start inside a repository or list projects in ~/.worktree-office/projects.json.';

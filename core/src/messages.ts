@@ -11,6 +11,7 @@ export type ServerMessage =
   | ProviderCapabilities
   | AgentCreated
   | AgentClosed
+  | AgentDirectoryChanged
   | AgentSelected
   | ExistingAgents
   | AgentStatus
@@ -95,6 +96,12 @@ export interface AgentCreated {
 export interface AgentClosed {
   type: 'agentClosed';
   id: number;
+}
+
+export interface AgentDirectoryChanged {
+  type: 'agentDirectoryChanged';
+  id: number;
+  directoryName: string;
 }
 
 export interface AgentSelected {
