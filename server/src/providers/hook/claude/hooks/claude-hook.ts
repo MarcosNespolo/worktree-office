@@ -9,6 +9,7 @@ import {
   SERVER_JSON_NAME,
   SERVERS_DIR,
 } from '../../../../constants.js';
+import { trimHookPayload } from '../../../../rooms/relayTrim.js';
 import type { ServerConfig, ServerTarget } from '../../../../serverConfig.js';
 import { isServerConfig, isServerTarget } from '../../../../serverConfig.js';
 
@@ -189,7 +190,7 @@ async function main(): Promise<void> {
     if (withDebugLog?.debugLog) debugLogPath = withDebugLog.debugLog;
   }
 
-  const body = JSON.stringify(data);
+  const body = JSON.stringify(trimHookPayload(data));
   await Promise.all(servers.map((server) => postToServer(server, body, eventName, sid)));
 }
 
