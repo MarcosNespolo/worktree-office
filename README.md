@@ -130,7 +130,7 @@ Type one or more tasks in the box at the top and press **Start** (or Ctrl+Enter)
 3. starts Claude Code in that worktree, inside the office terminal;
 4. receives its prompt through the terminal, never on a command line, once Claude Code is ready.
 
-When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option.
+When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option. A task waiting on the folder question never answers it by itself, and its prompt goes in only after you reply.
 
 A task is done when its session closes.
 
