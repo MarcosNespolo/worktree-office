@@ -7,6 +7,7 @@ import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
 import { requestRelease } from './releaseStore.js';
 import { useRoomsState } from './roomsStore.js';
+import { sendToAgent, useTasksState } from './tasksStore.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
 
@@ -16,6 +17,7 @@ interface NeedsYouPanelProps {
   agentStatuses: Record<number, string>;
   agentAwaitingInput: Record<number, boolean>;
   agentTools: Record<number, ToolActivity[]>;
+  terminalAgentIds: number[];
 }
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
@@ -28,6 +30,32 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
     >
       {children}
     </a>
+  );
+}
+
+function ReplyBox({ agentId }: { agentId: number }) {
+  const [text, setText] = useState('');
+  const send = (): void => {
+    if (!text.trim()) return;
+    sendToAgent(agentId, text);
+    setText('');
+  };
+  return (
+    <div className="flex gap-6 mt-4">
+      <input
+        value={text}
+        onChange={(event) => setText(event.target.value)}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') send();
+        }}
+        placeholder="Reply, or 1, 2, 3 for a menu"
+        className="flex-1 min-w-0 bg-bg-dark text-text text-sm px-6 py-2 border-2 border-border outline-none font-[inherit]"
+        data-testid="reply-input"
+      />
+      <Button size="sm" onClick={send}>
+        Send
+      </Button>
+    </div>
   );
 }
 
@@ -58,8 +86,10 @@ export function NeedsYouPanel({
   agentStatuses,
   agentAwaitingInput,
   agentTools,
+  terminalAgentIds,
 }: NeedsYouPanelProps) {
   const { needs, github, rooms } = useRoomsState();
+  const { tasks } = useTasksState();
   const [open, setOpen] = useState(true);
   if (rooms.length === 0 && agents.length === 0) return null;
   const agentNeeds = collectAgentNeeds(
@@ -69,7 +99,13 @@ export function NeedsYouPanel({
     agentAwaitingInput,
     agentTools,
   );
-  const total = agentNeeds.length + needs.length;
+  const blockedTasks = tasks.filter(
+    (task) =>
+      task.status === 'blocked' &&
+      task.agentId !== null &&
+      !agentNeeds.some((need) => need.id === task.agentId),
+  );
+  const total = agentNeeds.length + blockedTasks.length + needs.length;
 
   const focus = (id: number): void => {
     officeState.selectedAgentId = id;
@@ -103,8 +139,24 @@ export function NeedsYouPanel({
               <div className="flex-1 min-w-0">
                 <div className="text-sm leading-tight text-status-permission">{need.title}</div>
                 <div className="text-2xs text-text-muted">{need.room}</div>
+                {terminalAgentIds.includes(need.id) && <ReplyBox agentId={need.id} />}
               </div>
               <Button size="sm" onClick={() => focus(need.id)}>
+                Show
+              </Button>
+            </div>
+          ))}
+          {blockedTasks.map((task) => (
+            <div
+              key={`task-${task.id}`}
+              className="px-10 py-6 border-b border-border flex items-center gap-10"
+              data-testid="needs-you-item"
+            >
+              <div className="flex-1 min-w-0">
+                <div className="text-sm leading-tight text-status-permission">{task.detail}</div>
+                <div className="text-2xs text-text-muted">{task.room ?? task.title}</div>
+              </div>
+              <Button size="sm" onClick={() => task.agentId !== null && focus(task.agentId)}>
                 Show
               </Button>
             </div>

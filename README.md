@@ -6,6 +6,8 @@ worktree-office is a fork of [Pixel Agents](https://github.com/pixel-agents-hq/p
 
 > Status: early development. Expect breaking changes.
 
+![The demo office: one room per worktree with door signs, agents at work, the task box and the "Needs you" panel](docs/images/office.jpg)
+
 ## Why
 
 With five agents working in five worktrees, the hard questions are not about code:
@@ -25,7 +27,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] Door signs with branch, pull request status, checks and dev server port
 - [x] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
 - [x] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
-- [ ] A task box that starts new tasks in free worktrees
+- [x] A task box that starts new tasks in free worktrees, with a limit on how many run at once
 - [x] Demo mode with a fictional project
 
 ## Getting started
@@ -113,6 +115,25 @@ Every release is logged in `~/.worktree-office/release.log`. The main checkout i
 | Field     | Meaning                                                                                                                                                                                                                           |
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `release` | `{ "mode": "detach", "before": ["npm run clean"] }`. `mode` is `detach` (default: keep the folder, check out the default branch) or `remove` (delete the worktree). `before` commands run in the worktree, in the platform shell. |
+
+### Starting tasks
+
+Type one or more tasks in the box at the top and press **Start** (or Ctrl+Enter). Separate tasks with a blank line, or write them as a list. Each task:
+
+1. waits until fewer than `maxActive` tasks are running;
+2. takes a free worktree, meaning one with no branch checked out and nobody working in it, or creates one when `createWorktree` is set;
+3. starts Claude Code in that worktree, inside the office terminal;
+4. receives its prompt through the terminal, never on a command line, once Claude Code is ready.
+
+When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option.
+
+A task is done when its session closes.
+
+| Field               | Meaning                                                                                                                                                                                                                                                                         |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `tasks` (top level) | `{ "maxActive": 3, "split": "lines" }`. `split` is `lines` (paragraphs or list items) or `claude`, which asks Claude Code to split free text into tasks.                                                                                                                        |
+| `launch`            | `{ "prompt": "{text}", "skipPermissions": false }`. `prompt` is the text sent to the agent, with `{text}`, `{title}`, `{room}`, `{path}`, `{branch}` and `{port}` filled in. `skipPermissions` starts Claude Code with `--dangerously-skip-permissions`.                        |
+| `createWorktree`    | `{ "path": "~/code/acme-web-{slug}", "branch": "task/{slug}", "copy": [".env.local"], "after": ["npm install"] }`. Creates a worktree when none is free. `path` takes `{slug}` or `{n}`, `copy` brings untracked files from the main checkout, and `after` runs setup commands. |
 
 ## Credits
 

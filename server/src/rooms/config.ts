@@ -31,6 +31,18 @@ export interface ReleaseConfig {
   before: string[];
 }
 
+export interface LaunchConfig {
+  prompt: string;
+  skipPermissions: boolean;
+}
+
+export interface CreateWorktreeConfig {
+  path: string;
+  branch: string | null;
+  copy: string[];
+  after: string[];
+}
+
 export interface ProjectConfig {
   name: string;
   root: string;
@@ -43,11 +55,41 @@ export interface ProjectConfig {
   fields: FieldRule[];
   needsYou: NeedRule[];
   release: ReleaseConfig;
+  launch: LaunchConfig;
+  createWorktree: CreateWorktreeConfig | null;
+}
+
+export interface TasksConfig {
+  maxActive: number;
+  split: 'lines' | 'claude';
 }
 
 export interface RoomsConfig {
   projects: ProjectConfig[];
   source: 'file' | 'start-directory' | 'none';
+  tasks: TasksConfig;
+}
+
+const DEFAULT_TASKS: TasksConfig = { maxActive: 3, split: 'lines' };
+
+function parseTasks(raw: unknown): TasksConfig {
+  const obj = objectOf(raw);
+  const maxActive = integerOr(obj.maxActive, DEFAULT_TASKS.maxActive);
+  return {
+    maxActive: Math.max(1, maxActive),
+    split: obj.split === 'claude' ? 'claude' : 'lines',
+  };
+}
+
+function parseCreateWorktree(raw: unknown): CreateWorktreeConfig | null {
+  const obj = objectOf(raw);
+  if (typeof obj.path !== 'string' || !obj.path.trim()) return null;
+  return {
+    path: obj.path.trim(),
+    branch: typeof obj.branch === 'string' && obj.branch.trim() ? obj.branch.trim() : null,
+    copy: stringList(obj.copy),
+    after: stringList(obj.after),
+  };
 }
 
 export function roomsConfigPath(): string {
@@ -142,6 +184,15 @@ export function parseProject(raw: unknown): ProjectConfig | null {
       mode: objectOf(obj.release).mode === 'remove' ? 'remove' : 'detach',
       before: stringList(objectOf(obj.release).before),
     },
+    launch: {
+      prompt:
+        typeof objectOf(obj.launch).prompt === 'string' &&
+        String(objectOf(obj.launch).prompt).trim()
+          ? String(objectOf(obj.launch).prompt)
+          : '{text}',
+      skipPermissions: objectOf(obj.launch).skipPermissions === true,
+    },
+    createWorktree: parseCreateWorktree(obj.createWorktree),
   };
 }
 
@@ -165,10 +216,14 @@ export async function loadRoomsConfig(startDir: string): Promise<RoomsConfig> {
     const projects = Array.isArray(fromFile.projects)
       ? fromFile.projects.map(parseProject).filter((p): p is ProjectConfig => p !== null)
       : [];
-    return { projects, source: 'file' };
+    return { projects, source: 'file', tasks: parseTasks(fromFile.tasks) };
   }
   const top = await repositoryTopLevel(startDir);
-  if (!top) return { projects: [], source: 'none' };
+  if (!top) return { projects: [], source: 'none', tasks: DEFAULT_TASKS };
   const project = parseProject({ root: top });
-  return { projects: project ? [project] : [], source: 'start-directory' };
+  return {
+    projects: project ? [project] : [],
+    source: 'start-directory',
+    tasks: DEFAULT_TASKS,
+  };
 }

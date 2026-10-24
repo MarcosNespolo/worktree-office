@@ -38,11 +38,13 @@ import { claudeProvider, copyHookScript, hookProviderById } from './providers/in
 import { createRoomActions } from './rooms/actions.js';
 import { loadRoomsConfig } from './rooms/config.js';
 import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
+import { dropParentSessionMarkers } from './rooms/env.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
 import { StatusTracker } from './rooms/status.js';
+import { TaskRunner } from './rooms/tasks.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
 import { isLoopbackHost, normalizeHostname } from './wsAuth.js';
@@ -219,6 +221,12 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const cleared = dropParentSessionMarkers();
+  if (cleared.length > 0) {
+    console.log(
+      `[worktree-office] Started inside a Claude Code session: cleared ${cleared.length} session variables, so launched agents run as normal sessions.`,
+    );
+  }
   const demo = args.demo ? await prepareDemo() : null;
   if (demo) process.chdir(demo.repo);
   applyFirstRunSettings();
@@ -433,10 +441,21 @@ async function main(): Promise<void> {
       demo ? demoPullRequests : ghPullRequests,
     );
     await status.start();
+    const tasks = new TaskRunner({
+      store,
+      runtime,
+      ptyManager,
+      provider: claudeProvider,
+      rooms,
+      projects: roomsConfig.projects,
+      config: roomsConfig.tasks,
+      bypassPermissions: () => adapter.getSetting('pixel-agents.bypassPermissions', false),
+    });
     extraClientMessage = createRoomActions({
       store,
       rooms,
       status,
+      tasks,
       hasTerminal: (agentId) => ptyManager.has(agentId),
       closeAgent: (agentId) => {
         ptyManager.dispose(agentId);
@@ -488,6 +507,7 @@ async function main(): Promise<void> {
       // leave a child that ignores SIGHUP orphaned on a dead server.
       await ptyManager.disposeAll();
       demoDriver?.stop();
+      tasks.stop();
       status.stop();
       rooms.stop();
       runtime.dispose();

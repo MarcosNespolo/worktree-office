@@ -1,12 +1,17 @@
 import type { ExtraClientMessageHandler } from '../httpServer.js';
 import { parseReleaseRequest, type ReleaseDeps, releaseRoom } from './release.js';
+import type { TaskRunner } from './tasks.js';
 
-export function createRoomActions(deps: ReleaseDeps): ExtraClientMessageHandler {
+export interface RoomActionDeps extends ReleaseDeps {
+  tasks: TaskRunner;
+}
+
+export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandler {
   const releasing = new Set<string>();
-  return (msg, reply) => {
-    if (msg.type !== 'releaseRoom') return false;
+
+  const release = (msg: Record<string, unknown>, reply: (m: Record<string, unknown>) => void) => {
     const request = parseReleaseRequest(msg);
-    if (!request) return true;
+    if (!request) return;
     if (releasing.has(request.label)) {
       reply({
         type: 'releaseResult',
@@ -16,7 +21,7 @@ export function createRoomActions(deps: ReleaseDeps): ExtraClientMessageHandler 
         message: `${request.label} is already being released.`,
         files: [],
       });
-      return true;
+      return;
     }
     releasing.add(request.label);
     releaseRoom(deps, request)
@@ -32,6 +37,26 @@ export function createRoomActions(deps: ReleaseDeps): ExtraClientMessageHandler 
         }),
       )
       .finally(() => releasing.delete(request.label));
-    return true;
+  };
+
+  return (msg, reply) => {
+    switch (msg.type) {
+      case 'releaseRoom':
+        release(msg, reply);
+        return true;
+      case 'startTasks':
+        if (typeof msg.text === 'string') void deps.tasks.add(msg.text);
+        return true;
+      case 'cancelTask':
+        if (typeof msg.id === 'string') deps.tasks.cancel(msg.id);
+        return true;
+      case 'sendToAgent':
+        if (typeof msg.agentId === 'number' && typeof msg.text === 'string') {
+          deps.tasks.send(msg.agentId, msg.text);
+        }
+        return true;
+      default:
+        return false;
+    }
   };
 }
