@@ -84,7 +84,7 @@ export function fieldsFor(
   rules: readonly FieldRule[],
 ): Record<string, string> {
   const fields: Record<string, string> = {};
-  if (!pr) return fields;
+  if (!pr || (pr.state !== 'open' && pr.state !== 'draft')) return fields;
   for (const rule of rules) {
     const sources = rule.from === 'labels' ? pr.labels : [pr.body];
     for (const text of sources) {

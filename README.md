@@ -98,12 +98,12 @@ Click **alerts off** in the panel header to get a system notification whenever a
 
 These project fields tune the signs and the panel:
 
-| Field       | Meaning                                                                                                                                                                                                               |
-| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `github`    | `owner/repo` to read pull requests from, or `false` to skip them. Defaults to the `origin` remote.                                                                                                                    |
-| `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`. |
-| `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value.           |
-| `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                        |
+| Field       | Meaning                                                                                                                                                                                                                                                    |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github`    | `owner/repo` to read pull requests from, or `false` to skip them. Defaults to the `origin` remote.                                                                                                                                                         |
+| `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`.                                      |
+| `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value. Only open and draft pull requests have fields. |
+| `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                                                             |
 
 ### Releasing a worktree
 
