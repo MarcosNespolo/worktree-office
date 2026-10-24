@@ -62,10 +62,10 @@ export interface LaunchStandaloneOptions {
   /** Browser viewport (default 1280×800, the desktop shell). A phone-sized
    *  viewport renders the mobile shell instead. */
   viewport?: { width: number; height: number };
-  /** Pre-seed `~/.pixel-agents/layout.json` before the host starts (see
+  /** Pre-seed `~/.worktree-office/layout.json` before the host starts (see
    *  helpers/layout-seed.ts — it must carry a high layoutRevision). */
   seedLayout?: unknown;
-  /** Extra top-level fields for the seeded `~/.pixel-agents/config.json`
+  /** Extra top-level fields for the seeded `~/.worktree-office/config.json`
    *  (e.g. `directories`), merged over the baseline (consent, and the start
    *  directory shown in the drawer). Ignored when the file already exists (a
    *  shared HOME was seeded by its owner). */
@@ -259,7 +259,7 @@ const PRINTED_URL_PATTERN = /Pixel Agents server running at (\S+)\s/;
  * obtains the server token — the token is what makes the session privileged
  * enough to approve a hook install (the SPA forwards it on the /ws handshake,
  * server/src/httpServer.ts standaloneTokenValid). Reading the token out of
- * `~/.pixel-agents/server.json` and synthesizing an equivalent URL, which this
+ * `~/.worktree-office/server.json` and synthesizing an equivalent URL, which this
  * fixture used to do, is the fixture handing ITSELF a capability no browser can
  * reach: the whole standalone suite then stays green over a CLI that prints a
  * bare, wrong-tokened, or unbrowsable URL, and every real user lands in a
@@ -300,7 +300,7 @@ export async function launchStandalone(
   // asks over the tokened /ws handshake and the in-app dialog covers the
   // office in every spec. Only when the file does not exist yet — a shared
   // HOME (multi-server) was already seeded by the surface that owns it.
-  const configPath = path.join(tmpHome, '.pixel-agents', 'config.json');
+  const configPath = path.join(tmpHome, '.worktree-office', 'config.json');
   if (!fs.existsSync(configPath)) {
     // The start directory is shown: the product hides host Directories by
     // default, and the launch specs click its drawer row. A spec about the
@@ -314,7 +314,7 @@ export async function launchStandalone(
     fs.writeFileSync(configPath, JSON.stringify(seeded, null, 2));
   }
   if (options.seedLayout !== undefined) {
-    const layoutPath = path.join(tmpHome, '.pixel-agents', 'layout.json');
+    const layoutPath = path.join(tmpHome, '.worktree-office', 'layout.json');
     fs.mkdirSync(path.dirname(layoutPath), { recursive: true });
     fs.writeFileSync(layoutPath, JSON.stringify(options.seedLayout, null, 2));
   }

@@ -191,7 +191,7 @@ describe('clientMessageHandler: areas + carpet wire ordering', () => {
   describe('setHooksEnabled persistence', () => {
     /** Put our command on every installed event, as a real install would. */
     function seedInstalledHooks(): void {
-      const command = `node "${path.join(tempHome, '.pixel-agents', 'hooks', 'claude-hook.js')}"`;
+      const command = `node "${path.join(tempHome, '.worktree-office', 'hooks', 'claude-hook.js')}"`;
       const entry = { matcher: '', hooks: [{ type: 'command', command, timeout: 5 }] };
       fs.mkdirSync(path.join(tempHome, '.claude'), { recursive: true });
       fs.writeFileSync(
@@ -1017,7 +1017,7 @@ describe('clientMessageHandler: standalone terminal control plane', () => {
   });
 
   it('refuses external asset directory changes from an unprivileged client', () => {
-    // An asset directory is read from outside ~/.pixel-agents/ and its sprites
+    // An asset directory is read from outside ~/.worktree-office/ and its sprites
     // are sent back over the socket -- an untokened viewer must not choose it.
     const reloads: number[] = [];
     const untokened = ctx({ privileged: false, onReloadAssets: async () => void reloads.push(1) });

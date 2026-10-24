@@ -1,3 +1,16 @@
+# worktree-office
+
+This repository is worktree-office, a fork of Pixel Agents that turns git worktrees into rooms of the office. The upstream guide below still applies.
+
+Fork conventions:
+
+- Commit messages and pull request titles follow Conventional Commits, in English.
+- Fork-specific code lives in `server/src/rooms/` and `webview-ui/src/rooms/`. Keep edits to upstream files small, so upstream releases merge cleanly.
+- Data lives in `~/.worktree-office/`, never in `~/.pixel-agents/`.
+- Never commit names, paths, tokens or screenshots from a real private project. Use fictional examples.
+
+---
+
 # Pixel Agents — Compressed Reference
 
 Pixel art office where AI agents (Claude Code terminals today, any tool tomorrow) become animated characters. Ships as a **VS Code extension** and an **`npx pixel-agents` standalone CLI** from the same source tree.
