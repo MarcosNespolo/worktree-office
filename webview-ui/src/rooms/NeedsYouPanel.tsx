@@ -204,6 +204,9 @@ export function NeedsYouPanel({
               <div className="flex-1 min-w-0">
                 <div className="text-sm leading-tight text-status-permission">{task.detail}</div>
                 <div className="text-2xs text-text-muted">{task.room ?? task.title}</div>
+                {task.agentId !== null && terminalAgentIds.includes(task.agentId) && (
+                  <ReplyBox agentId={task.agentId} />
+                )}
               </div>
               <Button size="sm" onClick={() => task.agentId !== null && focus(task.agentId)}>
                 Show
