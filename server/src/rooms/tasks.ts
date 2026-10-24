@@ -21,6 +21,7 @@ import {
   TASKS_BROADCAST_MS,
 } from './constants.js';
 import { git } from './git.js';
+import { globToRegExp, matchesAny } from './glob.js';
 import type { RoomsManager } from './manager.js';
 import { type Room, samePath } from './rooms.js';
 import { portFor } from './status.js';
@@ -261,9 +262,14 @@ export class TaskRunner {
     for (const agent of this.deps.store.values()) {
       if (agent.directoryName) taken.add(agent.directoryName);
     }
+    const pool = project.launch.rooms.map(globToRegExp);
     return (
       this.deps.rooms.current.find(
-        (room) => room.project === project.name && room.branch === null && !taken.has(room.label),
+        (room) =>
+          room.project === project.name &&
+          room.branch === null &&
+          !taken.has(room.label) &&
+          (pool.length === 0 || matchesAny(room.path, pool)),
       ) ?? null
     );
   }
