@@ -83,6 +83,7 @@ export async function createHttpServer(options: HttpServerOptions): Promise<Http
     // is written -- otherwise every (re)connect would put the secret in stdout
     // and any log file (see wsAuth.redactTokenQuery).
     logger: options.embedded ? false : { serializers: { req: serializeRequestForLog } },
+    disableRequestLogging: process.env.PIXEL_AGENTS_DEBUG !== '1',
     bodyLimit: MAX_HOOK_BODY_SIZE,
   });
 

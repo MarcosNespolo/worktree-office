@@ -9,7 +9,7 @@ import { cancelPermissionTimer, cancelWaitingTimer } from './timerManager.js';
 import { notifyBackgroundAgentCompleted } from './transcriptParser.js';
 import type { AgentState } from './types.js';
 
-const debug = process.env.PIXEL_AGENTS_DEBUG !== '0';
+const debug = process.env.PIXEL_AGENTS_DEBUG === '1';
 
 /** Normalized hook event received from any provider's hook script via the HTTP server. */
 export interface HookEvent {

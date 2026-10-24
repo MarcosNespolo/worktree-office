@@ -22,6 +22,7 @@ interface ClaudeHookEntry {
     type: string;
     command: string;
     timeout?: number;
+    async?: boolean;
   }>;
 }
 
@@ -541,6 +542,7 @@ function makeHookEntry(): ClaudeHookEntry {
         type: 'command',
         command: makeHookCommand(),
         timeout: 5,
+        async: true,
       },
     ],
   };

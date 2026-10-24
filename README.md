@@ -44,6 +44,8 @@ Open the URL printed in the terminal. It carries an access token, so treat it li
 
 On first run, the office asks for permission to add hooks to `~/.claude/settings.json`, so it can follow your sessions as they happen. You can remove them anytime from Settings.
 
+The hooks run in the background, so they never slow Claude Code down, and they send only what the office needs: event names, tool names, paths and commands, never tool output. Set `PIXEL_AGENTS_DEBUG=1` to get verbose server logs.
+
 worktree-office keeps its data in `~/.worktree-office/`, separate from Pixel Agents, so both can be installed side by side.
 
 ## Configuration
