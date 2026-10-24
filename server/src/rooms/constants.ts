@@ -83,6 +83,16 @@ export const ROOM_BOTTOM_DOOR_COL = 9;
 export const LOBBY_LOUNGE_OFFSET_COL = 2;
 export const LOBBY_LOUNGE_OFFSET_ROW = 3;
 
+export const DEMO_PROJECT = 'acme-shop';
+export const DEMO_BEAT_MS = 2_500;
+export const DEMO_WORKTREES: ReadonlyArray<{ name: string; branch: string | null }> = [
+  { name: 'checkout-redesign', branch: 'feat/checkout-redesign' },
+  { name: 'fix-cart-total', branch: 'fix/cart-total' },
+  { name: 'api-docs', branch: 'docs/api' },
+  { name: 'search-filters', branch: 'feat/search-filters' },
+  { name: 'release-1-4', branch: null },
+];
+
 export const FIRST_RUN_SETTINGS = {
   alwaysShowLabels: true,
   watchAllSessions: true,
