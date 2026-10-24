@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { HooksConsentRequest, RoomsState } from '../../../core/src/messages.js';
+import type { HooksConsentRequest, ReleaseResult, RoomsState } from '../../../core/src/messages.js';
 import { playDoneSound, playPermissionSound, setSoundEnabled } from '../notificationSound.js';
 import type { ExistingAgentMeta, PendingAgent } from '../office/engine/existingAgents.js';
 import { reconcileExistingAgents } from '../office/engine/existingAgents.js';
@@ -19,6 +19,7 @@ import {
 } from '../office/toolUtils.js';
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
+import { receiveReleaseResult } from '../rooms/releaseStore.js';
 import { setRoomsState } from '../rooms/roomsStore.js';
 import { isBrowserRuntime, isE2E } from '../runtime.js';
 import { transport } from '../transport/index.js';
@@ -407,6 +408,8 @@ export function useExtensionMessages(
         os.removeAllSubagents(id);
         setSubagentCharacters((prev) => prev.filter((s) => s.parentAgentId !== id));
         os.removeAgent(id);
+      } else if (msg.type === 'releaseResult') {
+        receiveReleaseResult(msg as unknown as ReleaseResult);
       } else if (msg.type === 'roomsState') {
         setRoomsState(msg as unknown as RoomsState);
       } else if (msg.type === 'agentDirectoryChanged') {

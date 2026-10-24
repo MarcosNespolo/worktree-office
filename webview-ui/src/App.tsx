@@ -41,6 +41,7 @@ import { overlayProjection } from './office/projection.js';
 import { getPetCount } from './office/sprites/petSpriteData.js';
 import { EditTool, type OfficeLayout, TILE_SIZE } from './office/types.js';
 import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
+import { ReleaseDialog, ReleaseNotice } from './rooms/ReleaseDialog.js';
 import { RoomSigns } from './rooms/RoomSigns.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
 import { installTestHooks } from './testHooks.js';
@@ -591,6 +592,8 @@ function App() {
             onCloseAgent={handleCloseAgent}
             alwaysShowOverlay={alwaysShowOverlay}
           />
+          <ReleaseDialog />
+          <ReleaseNotice />
           <RoomSigns
             officeState={officeState}
             containerRef={containerRef}

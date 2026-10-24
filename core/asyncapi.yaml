@@ -130,6 +130,7 @@ components:
         - $ref: '#/components/schemas/AgentDiagnostics'
         # Rooms (worktree-office)
         - $ref: '#/components/schemas/RoomsState'
+        - $ref: '#/components/schemas/ReleaseResult'
       discriminator: type
 
     ClientMessage:
@@ -161,6 +162,8 @@ components:
         - $ref: '#/components/schemas/RemoveDirectory'
         - $ref: '#/components/schemas/RequestDirectorySuggestions'
         - $ref: '#/components/schemas/RequestDiagnostics'
+        # Rooms (worktree-office)
+        - $ref: '#/components/schemas/ReleaseRoom'
       discriminator: type
 
     # ── Server message variants ────────────────────────────────────
@@ -322,6 +325,51 @@ components:
           type: [string, 'null']
         prUrl:
           type: [string, 'null']
+
+    ReleaseRoom:
+      description: Release a worktree room. Every confirmation the server asked for is sent back as true.
+      type: object
+      additionalProperties: false
+      required: [type, label]
+      properties:
+        type:
+          const: releaseRoom
+        label:
+          type: string
+        confirmOpenPr:
+          type: boolean
+        confirmAgents:
+          type: boolean
+        confirmDirty:
+          type: boolean
+
+    ReleaseResult:
+      description: Outcome of a releaseRoom request, sent only to the client that asked. When needs is set, nothing was changed yet.
+      type: object
+      additionalProperties: false
+      required: [type, label, ok, needs, message, files]
+      properties:
+        type:
+          const: releaseResult
+        label:
+          type: string
+        ok:
+          type: boolean
+        needs:
+          oneOf:
+            - $ref: '#/components/schemas/ReleaseNeed'
+            - type: 'null'
+        message:
+          type: string
+        files:
+          type: array
+          items:
+            type: string
+
+    ReleaseNeed:
+      description: Confirmation required before a release goes on.
+      type: string
+      enum: [open-pr, agents, dirty]
 
     RoomsGithubState:
       description: Whether pull requests could be read through the GitHub CLI.

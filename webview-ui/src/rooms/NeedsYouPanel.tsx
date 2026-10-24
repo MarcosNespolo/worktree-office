@@ -5,7 +5,10 @@ import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
+import { requestRelease } from './releaseStore.js';
 import { useRoomsState } from './roomsStore.js';
+
+const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
 
 interface NeedsYouPanelProps {
   officeState: OfficeState;
@@ -40,6 +43,11 @@ function NeedRow({ need }: { need: RoomNeed }) {
       </div>
       {need.url && <ExternalLink href={need.url}>Open</ExternalLink>}
       {need.prUrl && need.prUrl !== need.url && <ExternalLink href={need.prUrl}>PR</ExternalLink>}
+      {RELEASABLE.has(need.kind) && (
+        <Button size="sm" onClick={() => requestRelease(need.room)}>
+          Release
+        </Button>
+      )}
     </div>
   );
 }

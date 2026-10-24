@@ -33,7 +33,9 @@ import {
 } from './constants.js';
 import { FileStateAdapter } from './fileStateAdapter.js';
 import { setDirectoryNameResolver } from './fileWatcher.js';
+import type { ExtraClientMessageHandler } from './httpServer.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
+import { createRoomActions } from './rooms/actions.js';
 import { loadRoomsConfig } from './rooms/config.js';
 import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
@@ -265,6 +267,7 @@ async function main(): Promise<void> {
     const runtime = new AgentRuntime(store, claudeProvider);
 
     let followSession: (event: Record<string, unknown>) => void = () => {};
+    let extraClientMessage: ExtraClientMessageHandler = () => false;
     const deliverHook = (providerId: string, event: Record<string, unknown>): void => {
       runtime.handleHookEvent(providerId, event);
       followSession(event);
@@ -363,6 +366,7 @@ async function main(): Promise<void> {
       ptyManager,
       allowedHosts: args.allowedHosts,
       rotateToken: args.rotateToken,
+      onExtraClientMessage: (msg, reply) => extraClientMessage(msg, reply),
     });
     currentConfig = { port: config.port, token: config.token };
     if (args.rotateToken) {
@@ -429,6 +433,16 @@ async function main(): Promise<void> {
       demo ? demoPullRequests : ghPullRequests,
     );
     await status.start();
+    extraClientMessage = createRoomActions({
+      store,
+      rooms,
+      status,
+      hasTerminal: (agentId) => ptyManager.has(agentId),
+      closeAgent: (agentId) => {
+        ptyManager.dispose(agentId);
+        runtime.closeAgent(agentId);
+      },
+    });
     const demoDriver = demo
       ? new DemoDriver(demo, (event) => deliverHook(claudeProvider.id, event))
       : null;

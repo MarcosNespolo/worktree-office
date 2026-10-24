@@ -26,6 +26,11 @@ export interface NeedRule {
   title: string | null;
 }
 
+export interface ReleaseConfig {
+  mode: 'detach' | 'remove';
+  before: string[];
+}
+
 export interface ProjectConfig {
   name: string;
   root: string;
@@ -37,6 +42,7 @@ export interface ProjectConfig {
   devServer: DevServerConfig;
   fields: FieldRule[];
   needsYou: NeedRule[];
+  release: ReleaseConfig;
 }
 
 export interface RoomsConfig {
@@ -132,6 +138,10 @@ export function parseProject(raw: unknown): ProjectConfig | null {
     devServer: parseDevServer(obj.devServer),
     fields: parseFields(obj.fields, name),
     needsYou: parseNeeds(obj.needsYou),
+    release: {
+      mode: objectOf(obj.release).mode === 'remove' ? 'remove' : 'detach',
+      before: stringList(objectOf(obj.release).before),
+    },
   };
 }
 

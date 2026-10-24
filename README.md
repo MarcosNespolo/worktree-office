@@ -24,7 +24,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] Sessions that work on a worktree from outside it, through `git -C` or file edits, move to its room
 - [x] Door signs with branch, pull request status, checks and dev server port
 - [x] A "needs you" panel: sessions waiting for input or permission, pull requests waiting on you, stale worktrees
-- [ ] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
+- [x] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [ ] A task box that starts new tasks in free worktrees
 - [x] Demo mode with a fictional project
 
@@ -97,6 +97,22 @@ These project fields tune the signs and the panel:
 | `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`. |
 | `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value.           |
 | `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                        |
+
+### Releasing a worktree
+
+Every door sign has a **release** button, and panel items for merged pull requests or forgotten dev servers have one too. One click:
+
+1. asks first when the pull request is still open, when sessions started from the office are working there, or when files changed;
+2. runs the cleanup commands of the project;
+3. stashes changed files, so nothing is lost;
+4. stops the dev server listening on the room port;
+5. checks out the default branch detached, or removes the worktree.
+
+Every release is logged in `~/.worktree-office/release.log`. The main checkout is never released.
+
+| Field     | Meaning                                                                                                                                                                                                                           |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release` | `{ "mode": "detach", "before": ["npm run clean"] }`. `mode` is `detach` (default: keep the folder, check out the default branch) or `remove` (delete the worktree). `before` commands run in the worktree, in the platform shell. |
 
 ## Credits
 
