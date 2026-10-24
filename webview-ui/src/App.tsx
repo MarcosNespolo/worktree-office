@@ -43,6 +43,7 @@ import { EditTool, type OfficeLayout, TILE_SIZE } from './office/types.js';
 import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
 import { ReleaseDialog, ReleaseNotice } from './rooms/ReleaseDialog.js';
 import { RoomSigns } from './rooms/RoomSigns.js';
+import { TaskBox } from './rooms/TaskBox.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
 import { installTestHooks } from './testHooks.js';
 import { transport } from './transport/index.js';
@@ -507,8 +508,10 @@ function App() {
               agentStatuses={agentStatuses}
               agentAwaitingInput={agentAwaitingInput}
               agentTools={agentTools}
+              terminalAgentIds={terminalAgentIds}
             />
           )}
+          {!isMobile && <TaskBox />}
 
           {/* Vignette overlay */}
           <div

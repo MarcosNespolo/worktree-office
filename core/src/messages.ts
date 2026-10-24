@@ -49,7 +49,8 @@ export type ServerMessage =
   | TerminalSessionClosed
   | AgentDiagnostics
   | RoomsState
-  | ReleaseResult;
+  | ReleaseResult
+  | TasksState;
 
 export type ClientMessage =
   | WebviewReady
@@ -79,7 +80,10 @@ export type ClientMessage =
   | RemoveDirectory
   | RequestDirectorySuggestions
   | RequestDiagnostics
-  | ReleaseRoom;
+  | ReleaseRoom
+  | StartTasks
+  | CancelTask
+  | SendToAgent;
 
 export interface ProviderCapabilities {
   type: 'providerCapabilities';
@@ -450,6 +454,28 @@ export interface ReleaseResult {
 
 export type ReleaseNeed = 'open-pr' | 'agents' | 'dirty';
 
+export interface TasksState {
+  type: 'tasksState';
+  tasks: TaskInfo[];
+  maxActive: number;
+  active: number;
+  splitting: boolean;
+}
+
+export interface TaskInfo {
+  id: string;
+  title: string;
+  prompt: string;
+  project: string;
+  room: string | null;
+  agentId: number | null;
+  status: TaskStatus;
+  detail: string;
+}
+
+export type TaskStatus =
+  'queued' | 'preparing' | 'starting' | 'blocked' | 'running' | 'done' | 'failed';
+
 export interface WebviewReady {
   type: 'webviewReady';
 }
@@ -596,4 +622,20 @@ export interface ReleaseRoom {
   confirmOpenPr?: boolean;
   confirmAgents?: boolean;
   confirmDirty?: boolean;
+}
+
+export interface StartTasks {
+  type: 'startTasks';
+  text: string;
+}
+
+export interface CancelTask {
+  type: 'cancelTask';
+  id: string;
+}
+
+export interface SendToAgent {
+  type: 'sendToAgent';
+  agentId: number;
+  text: string;
 }

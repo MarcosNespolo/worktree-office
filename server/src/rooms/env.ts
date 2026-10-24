@@ -1,0 +1,25 @@
+const PARENT_SESSION_MARKERS = [
+  'CLAUDECODE',
+  'CLAUDE_AGENT_SDK_VERSION',
+  'CLAUDE_CODE_CHILD_SESSION',
+  'CLAUDE_CODE_EMIT_STARTUP_TIMING',
+  'CLAUDE_CODE_ENABLE_SDK_FILE_CHECKPOINTING',
+  'CLAUDE_CODE_ENTRYPOINT',
+  'CLAUDE_CODE_EXECPATH',
+  'CLAUDE_CODE_MESSAGING_SOCKET',
+  'CLAUDE_CODE_MESSAGING_TOKEN',
+  'CLAUDE_CODE_QUESTION_PREVIEW_FORMAT',
+  'CLAUDE_CODE_SESSION_ATTENDED',
+  'CLAUDE_CODE_SESSION_ID',
+  'CLAUDE_CODE_SSE_PORT',
+  'CLAUDE_EFFORT',
+  'CLAUDE_PID',
+  'MCP_CONNECTION_NONBLOCKING',
+];
+
+export function dropParentSessionMarkers(env: NodeJS.ProcessEnv = process.env): string[] {
+  if (!env.CLAUDECODE && !env.CLAUDE_CODE_CHILD_SESSION) return [];
+  const removed = PARENT_SESSION_MARKERS.filter((name) => name in env);
+  for (const name of removed) delete env[name];
+  return removed;
+}

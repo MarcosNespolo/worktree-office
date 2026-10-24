@@ -131,6 +131,7 @@ components:
         # Rooms (worktree-office)
         - $ref: '#/components/schemas/RoomsState'
         - $ref: '#/components/schemas/ReleaseResult'
+        - $ref: '#/components/schemas/TasksState'
       discriminator: type
 
     ClientMessage:
@@ -164,6 +165,9 @@ components:
         - $ref: '#/components/schemas/RequestDiagnostics'
         # Rooms (worktree-office)
         - $ref: '#/components/schemas/ReleaseRoom'
+        - $ref: '#/components/schemas/StartTasks'
+        - $ref: '#/components/schemas/CancelTask'
+        - $ref: '#/components/schemas/SendToAgent'
       discriminator: type
 
     # ── Server message variants ────────────────────────────────────
@@ -365,6 +369,89 @@ components:
           type: array
           items:
             type: string
+
+    StartTasks:
+      description: Turn free text into tasks, queue them and start each one in a free worktree.
+      type: object
+      additionalProperties: false
+      required: [type, text]
+      properties:
+        type:
+          const: startTasks
+        text:
+          type: string
+
+    CancelTask:
+      description: Remove a queued or finished task from the list.
+      type: object
+      additionalProperties: false
+      required: [type, id]
+      properties:
+        type:
+          const: cancelTask
+        id:
+          type: string
+
+    SendToAgent:
+      description: Type a message into the terminal of an agent the office started, as if pasted and sent.
+      type: object
+      additionalProperties: false
+      required: [type, agentId, text]
+      properties:
+        type:
+          const: sendToAgent
+        agentId:
+          type: integer
+        text:
+          type: string
+
+    TasksState:
+      description: Every task started from the office, sent when it changes and every few seconds.
+      type: object
+      additionalProperties: false
+      required: [type, tasks, maxActive, active, splitting]
+      properties:
+        type:
+          const: tasksState
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaskInfo'
+        maxActive:
+          type: integer
+        active:
+          type: integer
+        splitting:
+          type: boolean
+          description: True while the text of a request is being split into tasks.
+
+    TaskInfo:
+      description: One task from the task box.
+      type: object
+      additionalProperties: false
+      required: [id, title, prompt, project, room, agentId, status, detail]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        prompt:
+          type: string
+        project:
+          type: string
+        room:
+          type: [string, 'null']
+        agentId:
+          type: [integer, 'null']
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+        detail:
+          type: string
+
+    TaskStatus:
+      description: Lifecycle of a task.
+      type: string
+      enum: [queued, preparing, starting, blocked, running, done, failed]
 
     ReleaseNeed:
       description: Confirmation required before a release goes on.
