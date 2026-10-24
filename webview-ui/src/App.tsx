@@ -40,6 +40,8 @@ import { migrateLayoutColors } from './office/layout/layoutSerializer.js';
 import { overlayProjection } from './office/projection.js';
 import { getPetCount } from './office/sprites/petSpriteData.js';
 import { EditTool, type OfficeLayout, TILE_SIZE } from './office/types.js';
+import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
+import { RoomSigns } from './rooms/RoomSigns.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
 import { installTestHooks } from './testHooks.js';
 import { transport } from './transport/index.js';
@@ -497,6 +499,15 @@ function App() {
           {/* Mobile: pinch replaces the zoom buttons, and the toolbar's
                 jobs move to the card bar (+) and the floating Settings button. */}
           {!isMobile && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
+          {!isMobile && (
+            <NeedsYouPanel
+              officeState={officeState}
+              agents={agents}
+              agentStatuses={agentStatuses}
+              agentAwaitingInput={agentAwaitingInput}
+              agentTools={agentTools}
+            />
+          )}
 
           {/* Vignette overlay */}
           <div
@@ -579,6 +590,12 @@ function App() {
             panRef={editor.panRef}
             onCloseAgent={handleCloseAgent}
             alwaysShowOverlay={alwaysShowOverlay}
+          />
+          <RoomSigns
+            officeState={officeState}
+            containerRef={containerRef}
+            zoom={editor.zoom}
+            panRef={editor.panRef}
           />
         </>
       ) : (

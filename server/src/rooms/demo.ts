@@ -3,8 +3,16 @@ import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
 
-import { DEMO_BEAT_MS, DEMO_PROJECT, DEMO_WORKTREES } from './constants.js';
+import { LAYOUT_FILE_DIR } from '../constants.js';
+import {
+  DEMO_BEAT_MS,
+  DEMO_GITHUB_REPO,
+  DEMO_PROJECT,
+  DEMO_WORKTREES,
+  ROOMS_CONFIG_FILE_NAME,
+} from './constants.js';
 import { git } from './git.js';
+import type { PullRequestInfo, PullRequestSource } from './github.js';
 
 export interface DemoEnvironment {
   base: string;
@@ -69,10 +77,61 @@ export async function prepareDemo(): Promise<DemoEnvironment> {
     );
     worktrees[name] = dir;
   }
+  fs.mkdirSync(path.join(home, LAYOUT_FILE_DIR), { recursive: true });
+  fs.writeFileSync(
+    path.join(home, LAYOUT_FILE_DIR, ROOMS_CONFIG_FILE_NAME),
+    JSON.stringify(
+      {
+        projects: [
+          {
+            name: DEMO_PROJECT,
+            root: repo,
+            github: DEMO_GITHUB_REPO,
+            fields: [{ name: 'stage', pattern: '^stage:(.+)$', from: 'labels' }],
+            needsYou: [{ field: 'stage', values: ['qa'], title: 'Ready for your QA' }],
+          },
+        ],
+      },
+      null,
+      2,
+    ),
+  );
   process.env.HOME = home;
   process.env.USERPROFILE = home;
   return { base, home, repo, worktrees };
 }
+
+const demoPull = (
+  number: number,
+  branch: string,
+  title: string,
+  extra: Partial<PullRequestInfo>,
+): PullRequestInfo => ({
+  number,
+  title,
+  url: `https://github.com/${DEMO_GITHUB_REPO}/pull/${number}`,
+  branch,
+  state: 'open',
+  review: 'review-required',
+  checks: 'passing',
+  updatedAt: '2026-01-01T00:00:00Z',
+  body: '',
+  labels: [],
+  ...extra,
+});
+
+export const demoPullRequests: PullRequestSource = () =>
+  Promise.resolve([
+    demoPull(41, 'feat/checkout-redesign', 'Redesign the checkout page', { review: 'approved' }),
+    demoPull(42, 'fix/cart-total', 'Fix the cart total with coupons', { checks: 'failing' }),
+    demoPull(43, 'docs/api', 'Document the public API', {
+      state: 'draft',
+      checks: 'pending',
+      labels: ['stage:qa'],
+    }),
+    demoPull(44, 'feat/search-filters', 'Add search filters', { review: 'changes-requested' }),
+    demoPull(38, 'feat/old-banner', 'Remove the old banner', { state: 'merged' }),
+  ]);
 
 export function cleanupDemo(env: DemoEnvironment): void {
   try {
