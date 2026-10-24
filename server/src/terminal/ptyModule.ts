@@ -17,6 +17,8 @@
  * terminal as available and then break on the user's first keystroke.
  */
 
+import * as path from 'path';
+
 import { PTY_MODULE_CANDIDATES } from '../constants.js';
 
 /** The slice of node-pty's surface this project uses. Structural, so any
@@ -75,6 +77,15 @@ function describeError(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
 }
 
+function withWindowsCommandShim(mod: PtyModule): PtyModule {
+  return {
+    spawn: (file, args, options) =>
+      path.extname(file) || path.isAbsolute(file)
+        ? mod.spawn(file, args, options)
+        : mod.spawn(process.env.ComSpec ?? 'cmd.exe', ['/d', '/c', file, ...args], options),
+  };
+}
+
 /**
  * Load the first usable PTY module and verify it can actually spawn.
  *
@@ -114,7 +125,11 @@ export function resolvePtyModule(
       continue;
     }
 
-    return { module: loaded, moduleId: id, reason: null };
+    return {
+      module: process.platform === 'win32' ? withWindowsCommandShim(loaded) : loaded,
+      moduleId: id,
+      reason: null,
+    };
   }
 
   const reason =
