@@ -10,6 +10,7 @@ export const TASK_TITLE_MAX = 60;
 export const TASK_SPLIT_TIMEOUT_MS = 120_000;
 export const TASK_PROMPT_READY_FALLBACK_MS = 15_000;
 export const TASK_PROMPT_QUIET_MS = 1_500;
+export const TASK_READY_MIN_VISIBLE = 150;
 export const TASK_SUBMIT_DELAY_MS = 400;
 export const TASK_PREPARE_TIMEOUT_MS = 20 * 60_000;
 export const TASKS_BROADCAST_MS = 10_000;

@@ -16,6 +16,7 @@ import {
   TASK_PREPARE_TIMEOUT_MS,
   TASK_PROMPT_QUIET_MS,
   TASK_PROMPT_READY_FALLBACK_MS,
+  TASK_READY_MIN_VISIBLE,
   TASK_SUBMIT_DELAY_MS,
   TASKS_BROADCAST_MS,
 } from './constants.js';
@@ -67,8 +68,10 @@ const BEL = String.fromCharCode(7);
 const PASTE_START = `${ESC}[200~`;
 const PASTE_END = `${ESC}[201~`;
 const ANSI = new RegExp(`${ESC}\\[[0-?]*[ -/]*[@-~]|${ESC}\\][^${BEL}]*${BEL}`, 'g');
-const READY = /❯Try"|\?forshortcuts|bypasspermissionson|accepteditson|planmodeon/i;
+const READY =
+  /❯Try"|\?forshortcuts|(?:bypasspermissions|acceptedits|planmode|automode)on|shift\+tabtocycle/i;
 const TRUST = /trustthisfolder|doyoutrust|trustthefiles|quicksafetycheck/i;
+const TRUST_DETAIL = 'Claude Code asks whether to trust this folder.';
 
 export function typeInto(session: PtySession, text: string): void {
   session.write(`${PASTE_START}${text}${PASTE_END}`);
@@ -131,6 +134,7 @@ export class TaskRunner {
   private readonly timer: ReturnType<typeof setInterval>;
   private readonly usage = new UsageMeter();
   private readonly transcripts = new Map<string, Set<string>>();
+  private readonly trustAnswers = new Map<string, () => void>();
 
   constructor(private readonly deps: TaskRunnerDeps) {
     deps.store.on('agentRemoved', (id) => this.agentGone(id));
@@ -215,6 +219,8 @@ export class TaskRunner {
     } else {
       typeInto(session, text);
     }
+    const task = this.tasks.find((candidate) => candidate.agentId === agentId);
+    if (task) this.trustAnswers.get(task.id)?.();
     return true;
   }
 
@@ -349,50 +355,75 @@ export class TaskRunner {
 
   private typeWhenReady(task: TaskInfo, session: PtySession, prompt: string): void {
     let screen = '';
-    let typed = false;
+    let visible = 0;
+    let phase: 'launching' | 'trust' | 'answered' | 'typed' = 'launching';
     let fallback: ReturnType<typeof setTimeout> | null = null;
     let quiet: ReturnType<typeof setTimeout> | null = null;
     const clear = (): void => {
       if (fallback) clearTimeout(fallback);
       if (quiet) clearTimeout(quiet);
+      fallback = null;
+      quiet = null;
+    };
+    const setStatus = (status: TaskStatus, detail: string): void => {
+      if (task.status === status && task.detail === detail) return;
+      task.status = status;
+      task.detail = detail;
+      this.publish();
+    };
+    const finished = (): boolean =>
+      phase === 'typed' || task.status === 'done' || task.status === 'failed';
+    const waitForAnswer = (): void => {
+      phase = 'trust';
+      clear();
+      setStatus('blocked', TRUST_DETAIL);
+    };
+    const go = (): void => {
+      if (finished()) return;
+      phase = 'typed';
+      clear();
+      unsubscribe();
+      this.trustAnswers.delete(task.id);
+      typeInto(session, prompt);
+      setStatus('running', '');
+    };
+    const onFallback = (): void => {
+      fallback = null;
+      if (finished() || phase === 'trust') return;
+      if (visible >= TASK_READY_MIN_VISIBLE) go();
+      else if (phase === 'answered') waitForAnswer();
+      else armFallback();
     };
     const armFallback = (): void => {
       if (fallback) clearTimeout(fallback);
-      fallback = setTimeout(() => go(), TASK_PROMPT_READY_FALLBACK_MS);
+      fallback = setTimeout(onFallback, TASK_PROMPT_READY_FALLBACK_MS);
     };
-    const go = (): void => {
-      if (typed || task.status === 'done' || task.status === 'failed') return;
-      typed = true;
-      clear();
-      unsubscribe();
-      typeInto(session, prompt);
-      task.status = 'running';
-      task.detail = '';
-      this.publish();
-    };
+    this.trustAnswers.set(task.id, () => {
+      if (phase !== 'trust') return;
+      phase = 'answered';
+      screen = '';
+      visible = 0;
+      setStatus('starting', 'Starting Claude Code');
+      armFallback();
+    });
     const unsubscribe = session.onData((data) => {
+      if (finished()) return;
       screen = `${screen}${data}`.slice(-8000);
+      visible += data.replace(ANSI, '').replace(/\s+/g, '').length;
       const plain = screen.replace(ANSI, '').replace(/\s+/g, '');
       if (TRUST.test(plain)) {
-        if (task.status !== 'blocked') {
-          task.status = 'blocked';
-          task.detail = 'Claude Code asks whether to trust this folder. Answer in its terminal.';
-          this.publish();
-        }
-        clear();
         screen = '';
+        visible = 0;
+        waitForAnswer();
         return;
       }
-      if (task.status === 'blocked') {
-        task.status = 'starting';
-        task.detail = 'Starting Claude Code';
-        this.publish();
-        armFallback();
+      if (!READY.test(plain)) return;
+      if (phase === 'trust') {
+        phase = 'answered';
+        setStatus('starting', 'Starting Claude Code');
       }
-      if (READY.test(plain)) {
-        if (quiet) clearTimeout(quiet);
-        quiet = setTimeout(go, TASK_PROMPT_QUIET_MS);
-      }
+      if (quiet) clearTimeout(quiet);
+      quiet = setTimeout(go, TASK_PROMPT_QUIET_MS);
     });
     armFallback();
   }
@@ -402,6 +433,7 @@ export class TaskRunner {
       (candidate) => candidate.agentId === agentId && ACTIVE.has(candidate.status),
     );
     if (!task) return;
+    this.trustAnswers.delete(task.id);
     task.status = 'done';
     task.detail = 'Session closed';
     this.trimFinished();
