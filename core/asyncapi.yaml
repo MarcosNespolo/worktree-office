@@ -429,7 +429,7 @@ components:
       description: One task from the task box.
       type: object
       additionalProperties: false
-      required: [id, title, prompt, project, room, agentId, status, detail]
+      required: [id, title, prompt, project, room, agentId, status, detail, tokens]
       properties:
         id:
           type: string
@@ -447,6 +447,9 @@ components:
           $ref: '#/components/schemas/TaskStatus'
         detail:
           type: string
+        tokens:
+          type: integer
+          description: Tokens processed by the task's sessions so far (input, cache and output, sub-agents included).
 
     TaskStatus:
       description: Lifecycle of a task.

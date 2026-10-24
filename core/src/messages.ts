@@ -471,6 +471,7 @@ export interface TaskInfo {
   agentId: number | null;
   status: TaskStatus;
   detail: string;
+  tokens: number;
 }
 
 export type TaskStatus =
