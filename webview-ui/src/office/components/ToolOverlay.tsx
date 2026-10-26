@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { Button } from '../../components/ui/Button.js';
 import {
@@ -24,13 +24,17 @@ import {
   TOOL_OVERLAY_VERTICAL_OFFSET,
 } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
-import { getSessionInfo, idleLabel } from '../../rooms/sessionsStore.js';
+import { getSessionInfo, idleLabel, stillWorking } from '../../rooms/sessionsStore.js';
 import type { OfficeState } from '../engine/officeState.js';
+import { type LabelSlot, placeLabels } from '../labelLayout.js';
 import { overlayProjection } from '../projection.js';
 import { getCachedSprite } from '../sprites/spriteCache.js';
 import { BUBBLE_PERMISSION_SPRITE, BUBBLE_WAITING_SPRITE } from '../sprites/spriteData.js';
-import type { ToolActivity } from '../types.js';
+import type { Character, ToolActivity } from '../types.js';
 import { CharacterState } from '../types.js';
+
+const LABEL_FALLBACK_SIZE = { w: 220, h: 48 };
+const LABEL_EDGE_PX = 4;
 
 // Both turn-end states show the green checkmark bubble. A finished turn (Stop)
 // shows ONLY the checkmark (the label falls through to its normal idle text);
@@ -135,23 +139,59 @@ export function ToolOverlay({
     return () => cancelAnimationFrame(rafId);
   }, []);
 
+  const labelEls = useRef(new Map<number, HTMLDivElement>());
+  const labelSizes = useRef(new Map<number, { w: number; h: number }>());
+  useLayoutEffect(() => {
+    const sizes = new Map<number, { w: number; h: number }>();
+    for (const [id, node] of labelEls.current) {
+      sizes.set(id, { w: node.offsetWidth, h: node.offsetHeight });
+    }
+    labelSizes.current = sizes;
+  });
+
   const el = containerRef.current;
   if (!el) return null;
   // dpr is also needed to size the bubble canvases in CSS px (OverlayBubble).
   const dpr = window.devicePixelRatio || 1;
-  const project = overlayProjection(
-    officeState.getLayout(),
-    el.getBoundingClientRect(),
-    zoom,
-    panRef.current,
-    dpr,
-  );
+  const bounds = el.getBoundingClientRect();
+  const project = overlayProjection(officeState.getLayout(), bounds, zoom, panRef.current, dpr);
 
   const selectedId = officeState.selectedAgentId;
   const hoveredId = officeState.hoveredAgentId;
 
   // All character IDs
   const allIds = [...agents, ...subagentCharacters.map((s) => s.id)];
+
+  const labelAnchorY = (ch: Character): number => {
+    const sittingOffset = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
+    return project.toScreenY(ch.y + sittingOffset - TOOL_OVERLAY_VERTICAL_OFFSET);
+  };
+  const desiredLabelTop = (ch: Character): number =>
+    labelAnchorY(ch) - (ch.directoryName || ch.isTeamLead || ch.agentName ? 34 : 28);
+
+  const slots: LabelSlot[] = [];
+  for (const id of allIds) {
+    const ch = officeState.characters.get(id);
+    if (!ch) continue;
+    const pinned = selectedId === id || hoveredId === id;
+    if (!alwaysShowOverlay && !pinned) continue;
+    if (ch.bubbleType === 'waiting' && !ch.waitingAwaitingInput && !pinned) continue;
+    const size = labelSizes.current.get(id) ?? LABEL_FALLBACK_SIZE;
+    slots.push({
+      id,
+      x: Math.min(
+        Math.max(project.toScreenX(ch.x), size.w / 2 + LABEL_EDGE_PX),
+        Math.max(size.w / 2 + LABEL_EDGE_PX, bounds.width - size.w / 2 - LABEL_EDGE_PX),
+      ),
+      top: desiredLabelTop(ch),
+      w: size.w,
+      h: size.h,
+      rank:
+        selectedId === id ? 0 : ch.bubbleType === 'permission' || ch.waitingAwaitingInput ? 1 : 2,
+    });
+  }
+  const labelTops = placeLabels(slots);
+  const labelXs = new Map(slots.map((slot) => [slot.id, slot.x]));
 
   return (
     <>
@@ -205,10 +245,8 @@ export function ToolOverlay({
           return bubbleNode && <Fragment key={id}>{bubbleNode}</Fragment>;
         }
 
-        // Position above character
-        const sittingOffset = ch.state === CharacterState.TYPE ? CHARACTER_SITTING_OFFSET_PX : 0;
         const screenX = project.toScreenX(ch.x);
-        const screenY = project.toScreenY(ch.y + sittingOffset - TOOL_OVERLAY_VERTICAL_OFFSET);
+        const screenY = labelAnchorY(ch);
 
         // A "Done" agent (finished turn: waiting bubble without awaitingInput)
         // shows ONLY its floating green checkmark bubble, never the label panel
@@ -234,6 +272,12 @@ export function ToolOverlay({
         // Get activity text
         const hasWaitingBubble = ch.bubbleType === 'waiting';
         const subHasPermission = isSub && ch.bubbleType === 'permission';
+        const session = isSub ? undefined : getSessionInfo(id);
+        const tools = agentTools[id];
+        const hasActiveTools = tools?.some((t) => !t.done) ?? false;
+        const working =
+          hasActiveTools ||
+          (session ? stillWorking(ch.isActive, session.lastActivityAt) : ch.isActive);
         let activityText: string;
         if (hasWaitingBubble && ch.waitingAwaitingInput) {
           // Idle, waiting on the user -> dedicated label. A finished turn (Stop)
@@ -255,18 +299,15 @@ export function ToolOverlay({
           activityText = getActivityText(
             id,
             agentTools,
-            ch.isActive,
+            working,
             ch.bubbleType,
             ch.waitingAwaitingInput ?? false,
           );
         }
-        const session = isSub ? undefined : getSessionInfo(id);
         if (activityText === IDLE_ACTIVITY_TEXT && session?.title) activityText = session.title;
 
         // Determine dot color
-        const tools = agentTools[id];
         const hasPermission = subHasPermission || tools?.some((t) => t.permissionWait && !t.done);
-        const hasActiveTools = tools?.some((t) => !t.done);
         const isActive = ch.isActive;
         const hasWaiting = ch.bubbleType === 'waiting';
 
@@ -277,12 +318,11 @@ export function ToolOverlay({
           dotColor = 'var(--color-status-active)';
         }
 
-        const idleText =
-          session && !isActive && !hasActiveTools
-            ? idleLabel(session.lastActivityAt)
-            : session?.stage && isActive
-              ? session.stage
-              : null;
+        const idleText = !session
+          ? null
+          : working
+            ? (session.stage ?? null)
+            : idleLabel(session.lastActivityAt);
 
         // Team info
         const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
@@ -298,10 +338,14 @@ export function ToolOverlay({
           <Fragment key={id}>
             {bubbleNode}
             <div
+              ref={(node) => {
+                if (node) labelEls.current.set(id, node);
+                else labelEls.current.delete(id);
+              }}
               className="absolute flex flex-col items-center -translate-x-1/2"
               style={{
-                left: screenX,
-                top: screenY - (hasExtraLines ? 34 : 28),
+                left: labelXs.get(id) ?? screenX,
+                top: labelTops.get(id) ?? screenY - (hasExtraLines ? 34 : 28),
                 pointerEvents: isSelected ? 'auto' : 'none',
                 opacity: alwaysShowOverlay && !isSelected && !isHovered ? (isSub ? 0.5 : 0.75) : 1,
                 zIndex: isSelected ? OVERLAY_LABEL_SELECTED_Z_INDEX : OVERLAY_LABEL_Z_INDEX,
