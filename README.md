@@ -6,7 +6,7 @@ worktree-office is a fork of [Pixel Agents](https://github.com/pixel-agents-hq/p
 
 > Status: early development. Expect breaking changes.
 
-![The demo office: one room per worktree with door signs, agents at work, the task box and the "Needs you" panel](docs/images/office.jpg)
+![The demo office: one room per worktree with door signs and agents at work](docs/images/office.jpg)
 
 ## Why
 
@@ -88,51 +88,50 @@ Sessions come and go with their conversation. A session joins the office when it
 
 A session that is not working shows the title Claude Code gave it, or the one set with `/rename`, and how long it has been idle, for example `checkout-redesign · idle 25m`.
 
-### Door signs and the "needs you" panel
+### Door signs and the task list
 
 Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one.
 
 The sign also says what the room is doing, judged from the tool calls of its most recent session: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading, **working** otherwise. A session waiting on you shows **needs you**, one with no message for ten minutes shows how long it has been idle, and a merged pull request with nobody around shows **done**. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the sign does not flicker. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
 
-The "Needs you" panel lists what is waiting on you:
+The task list on the left groups everything by state:
 
-- sessions asking for approval or waiting for your input;
-- pull requests with changes requested, failing checks, or approved and ready to merge;
-- worktrees whose pull request was merged or closed, ready to be released;
-- dev servers still running in a worktree that is free.
+- **Needs you**: sessions asking for approval or waiting for your reply, tasks blocked on a question, pull requests with changes requested or failing checks, and field rules that ask for you;
+- **Working**: sessions at work, with their stage, and tasks that are starting;
+- **Ready**: pull requests approved and ready to merge, merged pull requests whose worktree can be released, and field rules marked as ready, such as a pull request waiting for your QA;
+- **Queued** and **Idle**: tasks waiting for a free worktree, and rooms where nobody works;
+- **Other sessions**: sessions outside the task worktrees.
 
-Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room.
+Each row shows a title (the pull request title, or else the session, the task or the branch), the reason in the state color, the room and the pull request. A room without a session of its own takes the session that most recently linked its pull request, so its conversation is one click away. Arrow keys move through the list, and the bell at its top turns on a system notification for each new item that needs you while the office tab is not focused.
 
 ### The task panel
 
-Click a character, the message excerpt or **conversation** in a panel item, or **terminal** on a running task, and the task panel opens on the right. Its header says what the session is doing, with one color per state: needs you, working, idle. It also shows the room, the dev server port, which opens the app, and the pull request with its checks, plus **Release** when the room has a branch. A newly started task opens the panel on its terminal when nothing else is open. Drag the panel's left edge to resize it.
+Click a row of the task list, or a character, and the task panel opens on the right. Its header says what the task is doing, in the same color as its row. It also shows the room, the dev server port, which opens the app, and the pull request with its checks, plus **Release** when the room has a branch. A newly started task opens the panel on its terminal when nothing else is open. Drag the panel's left edge to resize it.
 
 - **Conversation** shows the recent messages of the session with a reply box under them. Messages are rendered as Markdown, tables and task lists included, and images pasted into the conversation show inline. Long lines in code blocks wrap, and numbered lists keep their numbers, so you can answer by number. When a session running in an office terminal asks for permission, it shows **Approve** and **Deny**.
 - **Terminal** shows the office terminal of the session. A session running elsewhere, for example in VS Code, can be continued in an office terminal with `claude --resume`, just as a reply would be, so use it only there from then on.
 
 The full screen button spreads the panel over the whole office, and Esc brings it back.
 
-Those items, and sessions waiting for your input, have a reply box, so you can answer without leaving the office:
+The reply box under the conversation works for any session:
 
 - a session running in an office terminal gets your reply typed in;
 - any other session, for example one open in VS Code, is continued in a new office terminal with `claude --resume`, and your reply goes in once Claude Code is ready. From then on, answer that conversation only in the office, or it splits in two;
 - a session that is still working refuses replies until it stops.
 
-Click **alerts off** in the panel header to get a system notification whenever a new item shows up while the office tab is not focused. The browser asks for permission the first time.
-
 These project fields tune the signs and the panel:
 
-| Field       | Meaning                                                                                                                                                                                                                                                    |
-| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `github`    | `owner/repo` to read pull requests from, or `false` to skip them. Defaults to the `origin` remote.                                                                                                                                                         |
-| `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`.                                      |
-| `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value. Only open and draft pull requests have fields. |
-| `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                                                             |
-| `stages`    | Patterns that decide **testing** and **reviewing**, for example `{ "testing": "pytest                                                                                                                                                                      | tox", "reviewing": "review | audit" }`. `testing`is matched against shell commands,`reviewing` against sub-agent descriptions and prompts; each replaces the default pattern. |
+| Field       | Meaning                                                                                                                                                                                                                                                               |
+| ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `github`    | `owner/repo` to read pull requests from, or `false` to skip them. Defaults to the `origin` remote.                                                                                                                                                                    |
+| `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`.                                                 |
+| `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value. Only open and draft pull requests have fields.            |
+| `needsYou`  | Rules that turn a field into a reason on the task list, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA", "state": "ready" }`. `state` is `attention` (default), `ready` or `idle`.                                                    |
+| `stages`    | Patterns that decide **testing** and **reviewing**, for example `{ "testing": "pytest\|tox", "reviewing": "review\|audit" }`. `testing` is matched against shell commands, `reviewing` against sub-agent descriptions and prompts; each replaces the default pattern. |
 
 ### Releasing a worktree
 
-Every door sign with a branch checked out or a dev server running has a **release** button, and panel items for merged pull requests or forgotten dev servers have one too. One click:
+Every door sign with a branch checked out or a dev server running has a **release** button, and so does the task panel of such a room. One click:
 
 1. asks first when the pull request is still open, when sessions started from the office are working there, or when files changed;
 2. runs the cleanup commands of the project;
@@ -148,14 +147,14 @@ Every release is logged in `~/.worktree-office/release.log`. The main checkout i
 
 ### Starting tasks
 
-Type one or more tasks in the box at the top and press **Start** (or Ctrl+Enter). The line under the box says how many tasks are running and which worktrees are free. Separate tasks with a blank line, or write them as a list. Each task:
+Click **New** at the top of the task list, describe one or more tasks and press **Start** (or Ctrl+Enter). The line under the list title says how many tasks are running and which worktrees are free. Separate tasks with a blank line, or write them as a list. Each task:
 
 1. waits until fewer than `maxActive` tasks are running;
 2. takes a free worktree, meaning one with no branch checked out and nobody working in it, or creates one when `createWorktree` is set;
 3. starts Claude Code in that worktree, inside the office terminal;
 4. receives its prompt through the terminal, never on a command line, once Claude Code is ready.
 
-When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option. A task waiting on the folder question never answers it by itself, and its prompt goes in only after you reply.
+When Claude Code asks whether to trust a new folder, or asks for approval, the task moves to **Needs you**. Sessions started from the office can be answered from the task panel: type a reply, or 1, 2 or 3 to pick a menu option. A task waiting on the folder question never answers it by itself, and its prompt goes in only after you reply.
 
 A task is done when its session closes.
 
