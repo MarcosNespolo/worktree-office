@@ -652,6 +652,7 @@ export interface ReleaseRoom {
 export interface StartTasks {
   type: 'startTasks';
   text: string;
+  images?: string[];
 }
 
 export interface CancelTask {
@@ -669,4 +670,5 @@ export interface ReplyToSession {
   type: 'replyToSession';
   agentId: number;
   text: string;
+  images?: string[];
 }

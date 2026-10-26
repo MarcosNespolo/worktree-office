@@ -2,10 +2,15 @@ import type { ExtraClientMessageHandler } from '../httpServer.js';
 import { parseReleaseRequest, type ReleaseDeps, releaseRoom } from './release.js';
 import type { ReplyOutcome } from './reply.js';
 import type { TaskRunner } from './tasks.js';
+import { isUploadPath } from './uploads.js';
 
 export interface RoomActionDeps extends ReleaseDeps {
   tasks: TaskRunner;
-  replyToSession: (agentId: number, text: string) => Promise<ReplyOutcome>;
+  replyToSession: (agentId: number, text: string, images: string[]) => Promise<ReplyOutcome>;
+}
+
+function imagesOf(msg: Record<string, unknown>): string[] {
+  return Array.isArray(msg.images) ? msg.images.filter(isUploadPath) : [];
 }
 
 export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandler {
@@ -26,7 +31,7 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
     }
     replying.add(agentId);
     deps
-      .replyToSession(agentId, msg.text)
+      .replyToSession(agentId, msg.text, imagesOf(msg))
       .then((outcome) => reply({ type: 'replyResult', ...outcome }))
       .catch((err: unknown) =>
         reply({
@@ -75,7 +80,7 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
         release(msg, reply);
         return true;
       case 'startTasks':
-        if (typeof msg.text === 'string') void deps.tasks.add(msg.text);
+        if (typeof msg.text === 'string') void deps.tasks.add(msg.text, imagesOf(msg));
         return true;
       case 'cancelTask':
         if (typeof msg.id === 'string') deps.tasks.cancel(msg.id);

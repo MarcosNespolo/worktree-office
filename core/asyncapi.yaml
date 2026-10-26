@@ -383,6 +383,11 @@ components:
           const: startTasks
         text:
           type: string
+        images:
+          type: array
+          items:
+            type: string
+          description: Paths returned by POST /api/uploads, attached to every task of this request.
 
     CancelTask:
       description: Remove a queued or finished task from the list.
@@ -420,6 +425,11 @@ components:
           type: integer
         text:
           type: string
+        images:
+          type: array
+          items:
+            type: string
+          description: Paths returned by POST /api/uploads, attached to the reply.
 
     ReplyResult:
       description: Outcome of a replyToSession request, sent to the client that asked.

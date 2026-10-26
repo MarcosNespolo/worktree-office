@@ -26,6 +26,7 @@ import { type Room, samePath } from './rooms.js';
 import { portFor } from './status.js';
 import { splitTasks } from './taskText.js';
 import { plainText, READY, sendKeysOrText, TRUST, typeInto } from './terminalText.js';
+import { withImages } from './uploads.js';
 import { UsageMeter } from './usage.js';
 
 export type TaskStatus =
@@ -123,6 +124,7 @@ export class TaskRunner {
   private readonly usage = new UsageMeter();
   private readonly transcripts = new Map<string, Set<string>>();
   private readonly trustAnswers = new Map<string, () => void>();
+  private readonly images = new Map<string, string[]>();
 
   constructor(private readonly deps: TaskRunnerDeps) {
     deps.store.on('agentRemoved', (id) => this.agentGone(id));
@@ -160,7 +162,7 @@ export class TaskRunner {
     task.tokens = total;
   }
 
-  async add(text: string): Promise<number> {
+  async add(text: string, images: readonly string[] = []): Promise<number> {
     const project = this.deps.projects[0];
     if (!project || !text.trim()) return 0;
     this.splitting = true;
@@ -169,8 +171,9 @@ export class TaskRunner {
     try {
       const drafts = await splitTasks(text, this.deps.config.split, project.root);
       for (const draft of drafts) {
+        const id = randomUUID();
         this.tasks.push({
-          id: randomUUID(),
+          id,
           title: draft.title,
           prompt: draft.prompt,
           project: project.name,
@@ -180,6 +183,7 @@ export class TaskRunner {
           detail: '',
           tokens: 0,
         });
+        if (images.length > 0) this.images.set(id, [...images]);
         added++;
       }
     } finally {
@@ -195,6 +199,7 @@ export class TaskRunner {
     if (!task || ACTIVE.has(task.status)) return;
     this.tasks = this.tasks.filter((candidate) => candidate.id !== id);
     this.transcripts.delete(id);
+    this.images.delete(id);
     this.publish();
   }
 
@@ -270,7 +275,10 @@ export class TaskRunner {
     if (excess > 0) {
       const drop = new Set(finished.slice(0, excess).map((task) => task.id));
       this.tasks = this.tasks.filter((task) => !drop.has(task.id));
-      for (const id of drop) this.transcripts.delete(id);
+      for (const id of drop) {
+        this.transcripts.delete(id);
+        this.images.delete(id);
+      }
     }
   }
 
@@ -330,14 +338,17 @@ export class TaskRunner {
     if (agentId === null || !session) return this.fail(task, 'Claude Code could not start');
     task.agentId = agentId;
     const port = portFor(room, project);
-    const prompt = fillTemplate(project.launch.prompt, {
-      text: task.prompt,
-      title: task.title,
-      room: room.label,
-      path: room.path,
-      branch: room.branch ?? '',
-      port: port === null ? '' : String(port),
-    });
+    const prompt = withImages(
+      fillTemplate(project.launch.prompt, {
+        text: task.prompt,
+        title: task.title,
+        room: room.label,
+        path: room.path,
+        branch: room.branch ?? '',
+        port: port === null ? '' : String(port),
+      }),
+      this.images.get(task.id) ?? [],
+    );
     this.typeWhenReady(task, session, prompt);
   }
 
