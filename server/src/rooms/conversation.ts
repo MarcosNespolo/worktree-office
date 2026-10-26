@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 
 import { CONVERSATION_TAIL_STEPS } from './constants.js';
+import { rememberImage } from './images.js';
 
 export interface ConversationMessage {
   role: 'user' | 'assistant';
@@ -16,6 +17,7 @@ export interface Conversation {
 interface Block {
   type?: string;
   text?: string;
+  source?: { type?: string; media_type?: string; data?: string };
 }
 
 interface Record_ {
@@ -37,20 +39,37 @@ const SYSTEM_REMINDER = /<system-reminder>[\s\S]*?<\/system-reminder>/g;
 const IMAGE_SOURCE = /\[Image: source: [^\]]*\]/g;
 const IMAGE_NUMBER = /\[Image #\d+\]/g;
 
+function imageOf(block: Block): string | null {
+  const source = block.source;
+  if (block.type !== 'image' || source?.type !== 'base64') return null;
+  if (typeof source.media_type !== 'string' || typeof source.data !== 'string') return null;
+  const hash = rememberImage(source.media_type, source.data);
+  return hash ? `![image](/api/images/${hash})` : null;
+}
+
 function textOf(content: unknown, role: 'user' | 'assistant'): string {
-  const raw =
-    typeof content === 'string'
-      ? content
-      : Array.isArray(content)
-        ? (content as Block[])
-            .filter((block) => block.type === 'text' && typeof block.text === 'string')
-            .map((block) => block.text as string)
-            .join('\n')
-        : '';
-  const text = raw
+  const parts: string[] = [];
+  let images = 0;
+  if (typeof content === 'string') parts.push(content);
+  else if (Array.isArray(content)) {
+    for (const block of content as Block[]) {
+      if (block.type === 'text' && typeof block.text === 'string') {
+        parts.push(block.text);
+        continue;
+      }
+      const image = imageOf(block);
+      if (image) {
+        parts.push(image);
+        images++;
+      }
+    }
+  }
+  const marker = images > 0 ? '' : '[image]';
+  const text = parts
+    .join('\n\n')
     .replace(SYSTEM_REMINDER, '')
-    .replace(IMAGE_SOURCE, '[image]')
-    .replace(IMAGE_NUMBER, '[image]')
+    .replace(IMAGE_SOURCE, marker)
+    .replace(IMAGE_NUMBER, marker)
     .trim();
   if (!text) return '';
   if (role === 'user' && SKIPPED_USER_PREFIXES.some((prefix) => text.startsWith(prefix))) return '';

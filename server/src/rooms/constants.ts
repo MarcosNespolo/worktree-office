@@ -22,6 +22,7 @@ export const CONVERSATION_TAIL_STEPS: readonly number[] = [
 ];
 export const CONVERSATION_DEFAULT_LIMIT = 40;
 export const CONVERSATION_MAX_LIMIT = 200;
+export const IMAGE_CACHE_MAX_BYTES = 64 * 1024 * 1024;
 export const PERMISSION_ALLOW_KEYS = '1';
 export const PERMISSION_DENY_KEYS = String.fromCharCode(27);
 export const UPLOADS_DIR_NAME = 'uploads';

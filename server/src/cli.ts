@@ -44,6 +44,7 @@ import { dropParentSessionMarkers } from './rooms/env.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
+import { registerImageRoute } from './rooms/images.js';
 import { RoomsManager } from './rooms/manager.js';
 import { openSessionTerminal, type ReplyDeps, replyToSession } from './rooms/reply.js';
 import { SessionInfoTracker } from './rooms/sessionInfo.js';
@@ -383,7 +384,10 @@ async function main(): Promise<void> {
       allowedHosts: args.allowedHosts,
       rotateToken: args.rotateToken,
       onExtraClientMessage: (msg, reply) => extraClientMessage(msg, reply),
-      extraRoutes: (app, token) => registerUploadRoute(app, token),
+      extraRoutes: (app, token) => {
+        registerUploadRoute(app, token);
+        registerImageRoute(app, token);
+      },
     });
     const prunedUploads = pruneUploads();
     if (prunedUploads > 0) {
