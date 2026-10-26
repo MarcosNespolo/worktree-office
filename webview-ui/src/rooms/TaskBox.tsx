@@ -47,7 +47,7 @@ export function TaskBox() {
 
   return (
     <div
-      className="absolute top-8 left-1/2 -translate-x-1/2 z-20 w-[520px] max-w-[calc(100%-120px)] pixel-panel flex flex-col"
+      className="absolute top-8 left-1/2 -translate-x-1/2 z-[44] w-[520px] max-w-[calc(100%-120px)] pixel-panel flex flex-col"
       data-testid="task-box"
     >
       <textarea

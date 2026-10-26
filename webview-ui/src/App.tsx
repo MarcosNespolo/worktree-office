@@ -510,6 +510,7 @@ function App() {
               agentAwaitingInput={agentAwaitingInput}
               agentTools={agentTools}
               terminalAgentIds={terminalAgentIds}
+              onOpenTerminal={terminalDrawer.reveal}
             />
           )}
           {!isMobile && <TaskBox />}

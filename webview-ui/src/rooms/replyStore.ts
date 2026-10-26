@@ -5,10 +5,11 @@ import { transport } from '../transport/index.js';
 
 export interface ReplyState {
   sending: number | null;
+  sentTo: number | null;
   result: ReplyResult | null;
 }
 
-let state: ReplyState = { sending: null, result: null };
+let state: ReplyState = { sending: null, sentTo: null, result: null };
 const listeners = new Set<() => void>();
 
 function set(next: ReplyState): void {
@@ -28,14 +29,14 @@ export function useReplyState(): ReplyState {
 }
 
 export function replyToSession(agentId: number, text: string, images: string[] = []): void {
-  set({ sending: agentId, result: null });
+  set({ sending: agentId, sentTo: agentId, result: null });
   transport.send({ type: 'replyToSession', agentId, text, images });
 }
 
 export function receiveReplyResult(result: ReplyResult): void {
-  set({ sending: null, result });
+  set({ ...state, sending: null, result });
 }
 
 export function dismissReplyResult(): void {
-  set({ sending: state.sending, result: null });
+  set({ ...state, result: null });
 }

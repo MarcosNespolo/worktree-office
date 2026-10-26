@@ -5,6 +5,7 @@ import type {
   ReleaseResult,
   ReplyResult,
   RoomsState,
+  SessionMessages,
   SessionsInfo,
   TasksState,
 } from '../../../core/src/messages.js';
@@ -26,6 +27,7 @@ import {
 } from '../office/toolUtils.js';
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
+import { receiveSessionMessages } from '../rooms/conversationStore.js';
 import { receiveReleaseResult } from '../rooms/releaseStore.js';
 import { receiveReplyResult } from '../rooms/replyStore.js';
 import { setRoomsState } from '../rooms/roomsStore.js';
@@ -424,6 +426,8 @@ export function useExtensionMessages(
         setSessionsInfo(msg as unknown as SessionsInfo);
       } else if (msg.type === 'replyResult') {
         receiveReplyResult(msg as unknown as ReplyResult);
+      } else if (msg.type === 'sessionMessages') {
+        receiveSessionMessages(msg as unknown as SessionMessages);
       } else if (msg.type === 'releaseResult') {
         receiveReleaseResult(msg as unknown as ReleaseResult);
       } else if (msg.type === 'roomsState') {
