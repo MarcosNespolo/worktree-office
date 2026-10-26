@@ -5,11 +5,13 @@ import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
+import { AttachButton, AttachmentList } from './Attachments.js';
 import { requestRelease } from './releaseStore.js';
 import { replyToSession, useReplyState } from './replyStore.js';
 import { useRoomsState } from './roomsStore.js';
 import { useSessionsInfo } from './sessionsStore.js';
 import { useTasksState } from './tasksStore.js';
+import { useAttachments } from './useAttachments.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
@@ -70,28 +72,41 @@ function replyHint(session: SessionInfo | null | undefined, inOffice: boolean): 
     : 'Replying continues this conversation in an office terminal.';
 }
 
-function ReplyBox({ agentId, hint }: { agentId: number; hint?: string | null }) {
+function ReplyBox({
+  agentId,
+  hint,
+  images = true,
+}: {
+  agentId: number;
+  hint?: string | null;
+  images?: boolean;
+}) {
   const [text, setText] = useState('');
   const { sending } = useReplyState();
+  const attachments = useAttachments();
   const send = (): void => {
-    if (!text.trim() || sending !== null) return;
-    replyToSession(agentId, text);
+    if (!text.trim() || sending !== null || attachments.uploading) return;
+    replyToSession(agentId, text, attachments.paths);
     setText('');
+    attachments.clear();
   };
   return (
-    <div className="mt-4">
-      <div className="flex gap-6">
+    <div className="mt-4" onDrop={attachments.onDrop} onDragOver={attachments.onDragOver}>
+      <AttachmentList attachments={attachments} />
+      <div className="flex items-center gap-6">
         <input
           value={text}
           onChange={(event) => setText(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') send();
           }}
+          onPaste={images ? attachments.onPaste : undefined}
           placeholder="Reply, or 1, 2, 3 for a menu"
           className="flex-1 min-w-0 bg-bg-dark text-text text-sm px-6 py-2 border-2 border-border outline-none font-[inherit]"
           data-testid="reply-input"
         />
-        <Button size="sm" onClick={send} disabled={sending !== null}>
+        {images && <AttachButton attachments={attachments} />}
+        <Button size="sm" onClick={send} disabled={sending !== null || attachments.uploading}>
           Send
         </Button>
       </div>
@@ -296,6 +311,7 @@ export function NeedsYouPanel({
                   <ReplyBox
                     agentId={need.id}
                     hint={replyHint(sessions.get(need.id), terminalAgentIds.includes(need.id))}
+                    images={need.kind === 'input'}
                   />
                 )}
               </div>
@@ -314,7 +330,7 @@ export function NeedsYouPanel({
                 <div className="text-sm leading-tight text-status-permission">{task.detail}</div>
                 <div className="text-2xs text-text-muted">{task.room ?? task.title}</div>
                 {task.agentId !== null && terminalAgentIds.includes(task.agentId) && (
-                  <ReplyBox agentId={task.agentId} />
+                  <ReplyBox agentId={task.agentId} images={false} />
                 )}
               </div>
               <Button size="sm" onClick={() => task.agentId !== null && focus(task.agentId)}>

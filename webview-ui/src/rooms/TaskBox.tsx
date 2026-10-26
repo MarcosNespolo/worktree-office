@@ -2,7 +2,9 @@ import { useState } from 'react';
 
 import type { TaskStatus } from '../../../core/src/messages.js';
 import { Button } from '../components/ui/Button.js';
+import { AttachButton, AttachmentList } from './Attachments.js';
 import { cancelTask, startTasks, useTasksState } from './tasksStore.js';
+import { useAttachments } from './useAttachments.js';
 
 const STATUS_TEXT: Record<TaskStatus, string> = {
   queued: 'queued',
@@ -34,11 +36,13 @@ export function TaskBox() {
   const { tasks, maxActive, active, splitting } = useTasksState();
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
+  const attachments = useAttachments();
 
   const submit = (): void => {
-    if (!text.trim() || splitting) return;
-    startTasks(text);
+    if (!text.trim() || splitting || attachments.uploading) return;
+    startTasks(text, attachments.paths);
     setText('');
+    attachments.clear();
   };
 
   return (
@@ -58,25 +62,32 @@ export function TaskBox() {
           }
           if (event.key === 'Escape') setOpen(false);
         }}
+        onPaste={attachments.onPaste}
+        onDrop={attachments.onDrop}
+        onDragOver={attachments.onDragOver}
         placeholder="Describe one or more tasks. Separate them with a blank line."
         className="bg-bg-dark text-text text-sm px-8 py-6 border-0 resize-none outline-none font-[inherit]"
         data-testid="task-input"
       />
+      <AttachmentList attachments={attachments} />
       {open && (
         <div className="flex items-center justify-between gap-8 px-8 py-4 border-t-2 border-border">
           <span className="text-2xs text-text-muted">
             {splitting
               ? 'Reading your tasks...'
-              : `${active} of ${maxActive} running. Ctrl+Enter starts.`}
+              : attachments.uploading
+                ? 'Uploading images...'
+                : `${active} of ${maxActive} running. Ctrl+Enter starts.`}
           </span>
-          <div className="flex gap-8">
+          <div className="flex items-center gap-8">
+            <AttachButton attachments={attachments} />
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
               Close
             </Button>
             <Button
               size="sm"
               variant="accent"
-              disabled={!text.trim() || splitting}
+              disabled={!text.trim() || splitting || attachments.uploading}
               onClick={submit}
               data-testid="task-start"
             >

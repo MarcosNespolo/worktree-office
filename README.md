@@ -58,7 +58,7 @@ worktree-office keeps its data in `~/.worktree-office/`, separate from Pixel Age
 
 ## Configuration
 
-By default, worktree-office watches the git repository it was started in. To watch other repositories, or several at once, create `~/.worktree-office/projects.json`:
+By default, worktree-office watches the git repository it was started in. To watch other repositories, or several at once, create `~/.worktree-office/projects.json` (or point the `WORKTREE_OFFICE_PROJECTS` environment variable at another file):
 
 ```json
 {
@@ -146,6 +146,8 @@ Type one or more tasks in the box at the top and press **Start** (or Ctrl+Enter)
 When Claude Code asks whether to trust a new folder, or asks for approval, the task shows up in the "Needs you" panel. Sessions started from the office can be answered right there: type a reply, or 1, 2 or 3 to pick a menu option. A task waiting on the folder question never answers it by itself, and its prompt goes in only after you reply.
 
 A task is done when its session closes.
+
+Images go along: paste them into the task box or the reply box, drop them there, or click **attach**. The office stores each image under `~/.worktree-office/uploads/`, keeps it for a week, and puts its path at the end of the text it types, so Claude Code attaches the image to the prompt. With several tasks in one request, every task gets the images.
 
 Each task row shows the tokens its session has used so far: input, cache reads and writes, and output, sub-agents included. It is a measure of usage, not a price.
 

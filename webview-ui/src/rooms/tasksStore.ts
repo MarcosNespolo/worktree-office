@@ -34,8 +34,8 @@ export function useTasksState(): TasksState {
   return useSyncExternalStore(subscribe, () => current);
 }
 
-export function startTasks(text: string): void {
-  transport.send({ type: 'startTasks', text });
+export function startTasks(text: string, images: string[] = []): void {
+  transport.send({ type: 'startTasks', text, images });
 }
 
 export function cancelTask(id: string): void {

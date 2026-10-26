@@ -27,9 +27,9 @@ export function useReplyState(): ReplyState {
   return useSyncExternalStore(subscribe, () => state);
 }
 
-export function replyToSession(agentId: number, text: string): void {
+export function replyToSession(agentId: number, text: string, images: string[] = []): void {
   set({ sending: agentId, result: null });
-  transport.send({ type: 'replyToSession', agentId, text });
+  transport.send({ type: 'replyToSession', agentId, text, images });
 }
 
 export function receiveReplyResult(result: ReplyResult): void {

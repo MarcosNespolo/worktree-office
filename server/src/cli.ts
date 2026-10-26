@@ -50,6 +50,7 @@ import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
 import { SessionSweeper } from './rooms/sweeper.js';
 import { TaskRunner } from './rooms/tasks.js';
+import { pruneUploads, registerUploadRoute } from './rooms/uploads.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
 import { isLoopbackHost, normalizeHostname } from './wsAuth.js';
@@ -381,7 +382,14 @@ async function main(): Promise<void> {
       allowedHosts: args.allowedHosts,
       rotateToken: args.rotateToken,
       onExtraClientMessage: (msg, reply) => extraClientMessage(msg, reply),
+      extraRoutes: (app, token) => registerUploadRoute(app, token),
     });
+    const prunedUploads = pruneUploads();
+    if (prunedUploads > 0) {
+      console.log(
+        `[worktree-office] Removed ${prunedUploads} uploaded image(s) older than a week.`,
+      );
+    }
     currentConfig = { port: config.port, token: config.token };
     if (args.rotateToken) {
       console.log(
@@ -477,7 +485,7 @@ async function main(): Promise<void> {
         ptyManager.dispose(agentId);
         runtime.closeAgent(agentId);
       },
-      replyToSession: (agentId, text) =>
+      replyToSession: (agentId, text, images) =>
         replyToSession(
           {
             store,
@@ -489,6 +497,7 @@ async function main(): Promise<void> {
           },
           agentId,
           text,
+          images,
         ),
     });
     const demoDriver = demo

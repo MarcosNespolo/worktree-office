@@ -61,6 +61,8 @@ export interface HttpServerOptions {
    *  public name. See wsAuth.privilegedHostnames. */
   allowedHosts?: readonly string[];
   onExtraClientMessage?: ExtraClientMessageHandler;
+  /** Registers extra routes on the app before it listens, with the server token. */
+  extraRoutes?: (app: FastifyInstance, token: string) => void | Promise<void>;
 }
 
 export type ExtraClientMessageHandler = (
@@ -123,6 +125,7 @@ export async function createHttpServer(options: HttpServerOptions): Promise<Http
     allowedHostnames,
     ptyManager: options.ptyManager,
   });
+  await options.extraRoutes?.(app, options.token);
 
   // ── Listen ──────────────────────────────────────────────────
 

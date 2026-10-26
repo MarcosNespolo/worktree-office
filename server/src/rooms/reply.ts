@@ -18,6 +18,7 @@ import {
 } from './constants.js';
 import { plainText, READY, TRUST, typeInto } from './terminalText.js';
 import { transcriptCwd } from './transcript.js';
+import { withImages } from './uploads.js';
 
 export interface ReplyDeps {
   store: AgentStateStore;
@@ -82,9 +83,11 @@ function waitUntilReady(session: PtySession): Promise<Readiness> {
 export async function replyToSession(
   deps: ReplyDeps,
   agentId: number,
-  text: string,
+  reply: string,
+  images: readonly string[] = [],
 ): Promise<ReplyOutcome> {
-  if (!text.trim()) return { ok: false, message: 'Type a reply first.', agentId };
+  if (!reply.trim()) return { ok: false, message: 'Type a reply first.', agentId };
+  const text = withImages(reply, images);
   if (deps.ptyManager.get(agentId)) {
     const sent = deps.sendToTerminal(agentId, text);
     return sent

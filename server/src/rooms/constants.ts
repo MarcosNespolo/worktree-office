@@ -11,6 +11,15 @@ export const TASK_SPLIT_TIMEOUT_MS = 120_000;
 export const TASK_PROMPT_READY_FALLBACK_MS = 15_000;
 export const TASK_PROMPT_QUIET_MS = 1_500;
 export const TASK_READY_MIN_VISIBLE = 150;
+export const UPLOADS_DIR_NAME = 'uploads';
+export const UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
+export const UPLOAD_KEEP_MS = 7 * 24 * 3_600_000;
+export const UPLOAD_TYPES: Readonly<Record<string, string>> = {
+  'image/png': 'png',
+  'image/jpeg': 'jpg',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+};
 export const REPLY_BUSY_MS = 15_000;
 export const REPLY_START_TIMEOUT_MS = 90_000;
 export const TASK_SUBMIT_DELAY_MS = 400;
