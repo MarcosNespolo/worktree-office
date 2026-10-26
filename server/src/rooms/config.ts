@@ -4,7 +4,7 @@ import * as path from 'path';
 
 import { SERVER_JSON_DIR } from '../constants.js';
 import { expandTilde } from '../directories.js';
-import { ROOMS_CONFIG_FILE_NAME } from './constants.js';
+import { ROOMS_CONFIG_FILE_NAME, SESSION_IDLE_DEFAULT_MINUTES } from './constants.js';
 import { repositoryTopLevel } from './git.js';
 
 export interface DevServerConfig {
@@ -65,13 +65,29 @@ export interface TasksConfig {
   split: 'lines' | 'claude';
 }
 
+export interface SessionsConfig {
+  hideAfterIdleMinutes: number;
+}
+
 export interface RoomsConfig {
   projects: ProjectConfig[];
   source: 'file' | 'start-directory' | 'none';
   tasks: TasksConfig;
+  sessions: SessionsConfig;
 }
 
 const DEFAULT_TASKS: TasksConfig = { maxActive: 3, split: 'lines' };
+const DEFAULT_SESSIONS: SessionsConfig = { hideAfterIdleMinutes: SESSION_IDLE_DEFAULT_MINUTES };
+
+function parseSessions(raw: unknown): SessionsConfig {
+  const minutes = objectOf(raw).hideAfterIdleMinutes;
+  return {
+    hideAfterIdleMinutes:
+      typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0
+        ? minutes
+        : DEFAULT_SESSIONS.hideAfterIdleMinutes,
+  };
+}
 
 function parseTasks(raw: unknown): TasksConfig {
   const obj = objectOf(raw);
@@ -218,14 +234,21 @@ export async function loadRoomsConfig(startDir: string): Promise<RoomsConfig> {
     const projects = Array.isArray(fromFile.projects)
       ? fromFile.projects.map(parseProject).filter((p): p is ProjectConfig => p !== null)
       : [];
-    return { projects, source: 'file', tasks: parseTasks(fromFile.tasks) };
+    return {
+      projects,
+      source: 'file',
+      tasks: parseTasks(fromFile.tasks),
+      sessions: parseSessions(fromFile.sessions),
+    };
   }
   const top = await repositoryTopLevel(startDir);
-  if (!top) return { projects: [], source: 'none', tasks: DEFAULT_TASKS };
+  if (!top)
+    return { projects: [], source: 'none', tasks: DEFAULT_TASKS, sessions: DEFAULT_SESSIONS };
   const project = parseProject({ root: top });
   return {
     projects: project ? [project] : [],
     source: 'start-directory',
     tasks: DEFAULT_TASKS,
+    sessions: DEFAULT_SESSIONS,
   };
 }

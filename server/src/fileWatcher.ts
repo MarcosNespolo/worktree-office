@@ -608,6 +608,14 @@ export function setDirectoryNameResolver(resolver: DirectoryNameResolver): void 
   directoryNameResolver = resolver;
 }
 
+export type SessionActivityFilter = (transcriptPath: string) => boolean;
+
+let sessionActivityFilter: SessionActivityFilter | null = null;
+
+export function setSessionActivityFilter(filter: SessionActivityFilter | null): void {
+  sessionActivityFilter = filter;
+}
+
 /**
  * Scan the provider's teammate transcripts for a given lead session.
  * Each teammate gets its own independent agent (positive ID) with file watching.
@@ -1351,6 +1359,7 @@ export function scanExternalDir(
     } catch {
       continue;
     }
+    if (sessionActivityFilter && !sessionActivityFilter(file)) continue;
 
     // Content check with two-tick delay for /clear files:
     // First tick: skip /clear files (give per-agent 3s to claim for internal /clear).
@@ -1455,6 +1464,7 @@ function scanGlobalProjectDirs(
       } catch {
         continue;
       }
+      if (sessionActivityFilter && !sessionActivityFilter(file)) continue;
 
       const directoryName =
         directoryNameResolver?.({ projectDir: dirPath }) ??
