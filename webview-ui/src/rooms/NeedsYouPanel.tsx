@@ -1,16 +1,24 @@
 import { useState } from 'react';
 
-import type { RoomNeed } from '../../../core/src/messages.js';
+import type { RoomInfo, RoomNeed, SessionInfo } from '../../../core/src/messages.js';
 import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
 import { requestRelease } from './releaseStore.js';
 import { useRoomsState } from './roomsStore.js';
+import { useSessionsInfo } from './sessionsStore.js';
 import { sendToAgent, useTasksState } from './tasksStore.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
+const MESSAGE_END_CHARS = 160;
+const SESSION_NEED_KINDS = new Set<string>([
+  'field',
+  'changes-requested',
+  'checks-failing',
+  'ready-to-merge',
+]);
 
 const NOTIFY_LABEL: Record<NotifyState, string> = {
   unsupported: '',
@@ -74,7 +82,65 @@ function ReplyBox({ agentId }: { agentId: number }) {
   );
 }
 
-function NeedRow({ need }: { need: RoomNeed }) {
+function latestSession(list: readonly SessionInfo[]): SessionInfo | null {
+  let best: SessionInfo | null = null;
+  for (const session of list) {
+    if (!best || (session.lastActivityAt ?? 0) > (best.lastActivityAt ?? 0)) best = session;
+  }
+  return best;
+}
+
+function sessionForNeed(
+  need: RoomNeed,
+  rooms: readonly RoomInfo[],
+  sessions: ReadonlyMap<number, SessionInfo>,
+  officeState: OfficeState,
+): SessionInfo | null {
+  if (!SESSION_NEED_KINDS.has(need.kind)) return null;
+  const all = [...sessions.values()];
+  const prNumber = rooms.find((room) => room.label === need.room)?.pr?.number;
+  if (prNumber !== undefined) {
+    const linked = latestSession(all.filter((session) => session.prNumbers.includes(prNumber)));
+    if (linked) return linked;
+  }
+  return latestSession(
+    all.filter((session) => officeState.characters.get(session.id)?.directoryName === need.room),
+  );
+}
+
+function roomAndTitle(room: string, session: SessionInfo | null | undefined): string {
+  return session?.title ? `${room} · ${session.title}` : room;
+}
+
+function endOf(text: string): string {
+  if (text.length <= MESSAGE_END_CHARS) return text;
+  const end = text.slice(-MESSAGE_END_CHARS);
+  const wordStart = end.indexOf(' ');
+  return `…${wordStart >= 0 && wordStart < 20 ? end.slice(wordStart + 1) : end}`;
+}
+
+function LastMessage({ session }: { session: SessionInfo | null | undefined }) {
+  if (!session?.lastText) return null;
+  return (
+    <div
+      className="text-2xs text-text-muted leading-tight mt-2 line-clamp-4"
+      title={session.lastText}
+      data-testid="needs-you-message"
+    >
+      {endOf(session.lastText)}
+    </div>
+  );
+}
+
+function NeedRow({
+  need,
+  session,
+  onShow,
+}: {
+  need: RoomNeed;
+  session: SessionInfo | null;
+  onShow: (id: number) => void;
+}) {
   return (
     <div
       className="px-10 py-6 border-b border-border flex items-center gap-10"
@@ -82,8 +148,14 @@ function NeedRow({ need }: { need: RoomNeed }) {
     >
       <div className="flex-1 min-w-0">
         <div className="text-sm leading-tight">{need.title}</div>
-        <div className="text-2xs text-text-muted">{need.room}</div>
+        <div className="text-2xs text-text-muted">{roomAndTitle(need.room, session)}</div>
+        <LastMessage session={session} />
       </div>
+      {session && (
+        <Button size="sm" onClick={() => onShow(session.id)}>
+          Show
+        </Button>
+      )}
       {need.url && <ExternalLink href={need.url}>Open</ExternalLink>}
       {need.prUrl && need.prUrl !== need.url && <ExternalLink href={need.prUrl}>PR</ExternalLink>}
       {RELEASABLE.has(need.kind) && (
@@ -105,6 +177,7 @@ export function NeedsYouPanel({
 }: NeedsYouPanelProps) {
   const { needs, github, rooms } = useRoomsState();
   const { tasks } = useTasksState();
+  const sessions = useSessionsInfo();
   const [open, setOpen] = useState(true);
   const agentNeeds = collectAgentNeeds(
     officeState,
@@ -187,7 +260,10 @@ export function NeedsYouPanel({
             >
               <div className="flex-1 min-w-0">
                 <div className="text-sm leading-tight text-status-permission">{need.title}</div>
-                <div className="text-2xs text-text-muted">{need.room}</div>
+                <div className="text-2xs text-text-muted">
+                  {roomAndTitle(need.room, sessions.get(need.id))}
+                </div>
+                <LastMessage session={sessions.get(need.id)} />
                 {terminalAgentIds.includes(need.id) && <ReplyBox agentId={need.id} />}
               </div>
               <Button size="sm" onClick={() => focus(need.id)}>
@@ -214,7 +290,12 @@ export function NeedsYouPanel({
             </div>
           ))}
           {needs.map((need) => (
-            <NeedRow key={need.id} need={need} />
+            <NeedRow
+              key={need.id}
+              need={need}
+              session={sessionForNeed(need, rooms, sessions, officeState)}
+              onShow={focus}
+            />
           ))}
         </div>
       )}
