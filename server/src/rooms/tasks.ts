@@ -50,6 +50,7 @@ export interface TasksSnapshot {
   maxActive: number;
   active: number;
   splitting: boolean;
+  freeRooms: string[];
 }
 
 export interface TaskRunnerDeps {
@@ -144,6 +145,9 @@ export class TaskRunner {
       maxActive: this.deps.config.maxActive,
       active: this.activeCount(),
       splitting: this.splitting,
+      freeRooms: this.deps.projects[0]
+        ? this.freeRooms(this.deps.projects[0]).map((room) => room.label)
+        : [],
     };
   }
 
@@ -249,7 +253,7 @@ export class TaskRunner {
     return this.tasks.filter((task) => ACTIVE.has(task.status)).length;
   }
 
-  private freeRoom(project: ProjectConfig): Room | null {
+  private freeRooms(project: ProjectConfig): Room[] {
     const taken = new Set(
       this.tasks.filter((task) => ACTIVE.has(task.status) && task.room).map((task) => task.room),
     );
@@ -257,15 +261,17 @@ export class TaskRunner {
       if (agent.directoryName) taken.add(agent.directoryName);
     }
     const pool = project.launch.rooms.map(globToRegExp);
-    return (
-      this.deps.rooms.current.find(
-        (room) =>
-          room.project === project.name &&
-          room.branch === null &&
-          !taken.has(room.label) &&
-          (pool.length === 0 || matchesAny(room.path, pool)),
-      ) ?? null
+    return this.deps.rooms.everyRoom.filter(
+      (room) =>
+        room.project === project.name &&
+        room.branch === null &&
+        !taken.has(room.label) &&
+        (pool.length === 0 || matchesAny(room.path, pool)),
     );
+  }
+
+  private freeRoom(project: ProjectConfig): Room | null {
+    return this.freeRooms(project)[0] ?? null;
   }
 
   private fail(task: TaskInfo, detail: string): void {

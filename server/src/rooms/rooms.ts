@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import type { ProjectConfig } from './config.js';
-import { ROOMS_MAX } from './constants.js';
 import { listWorktrees, type WorktreeEntry } from './git.js';
 import { globToRegExp, matchesAny } from './glob.js';
 
@@ -16,7 +15,6 @@ export interface Room {
 export interface Discovery {
   rooms: Room[];
   failedProjects: string[];
-  truncated: number;
 }
 
 const fold = (s: string): string => (process.platform === 'win32' ? s.toLowerCase() : s);
@@ -70,7 +68,6 @@ function uniqueLabel(room: Room, used: Set<string>): string {
 export async function discoverRooms(
   projects: readonly ProjectConfig[],
   previous: readonly Room[],
-  isShown: (room: Room) => boolean = () => true,
 ): Promise<Discovery> {
   const rooms: Room[] = [];
   const failedProjects: string[] = [];
@@ -87,12 +84,7 @@ export async function discoverRooms(
       rooms.push({ ...room, label });
     }
   }
-  const shown = rooms.filter(isShown);
-  return {
-    rooms: shown.slice(0, ROOMS_MAX),
-    failedProjects,
-    truncated: Math.max(0, shown.length - ROOMS_MAX),
-  };
+  return { rooms, failedProjects };
 }
 
 export function roomForPath(rooms: readonly Room[], filePath: string | undefined): Room | null {
