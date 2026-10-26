@@ -5,9 +5,9 @@ import { TERMINAL_DRAWER_RESIZE_HANDLE_PX } from '../constants.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
-import { collectAgentNeeds } from './agentNeeds.js';
 import { closeConversation } from './conversationStore.js';
 import { ConversationView } from './ConversationView.js';
+import { NoSessionView } from './NoSessionView.js';
 import { requestRelease } from './releaseStore.js';
 import { terminalHint } from './replyHint.js';
 import { useReplyState } from './replyStore.js';
@@ -25,6 +25,7 @@ import { StateChip } from './StateChip.js';
 import { useTasksState } from './tasksStore.js';
 import { TerminalButton } from './TerminalButton.js';
 import { IconButton, UiButton } from './ui.js';
+import { cleanTitle, findItem, useWorkItems } from './workItems.js';
 import { sessionStateView } from './workState.js';
 
 const FOLLOW_MOVED_SESSION_MS = 1_500;
@@ -105,28 +106,40 @@ export function TaskPanel({
     return () => window.removeEventListener('keydown', onKey);
   }, [full]);
 
-  const needs = collectAgentNeeds(
+  const { items, agentNeeds } = useWorkItems(
     officeState,
     agents,
     agentStatuses,
     agentAwaitingInput,
     agentTools,
   );
-  const need = agentId === null ? undefined : needs.find((item) => item.id === agentId);
+  const need = agentId === null ? undefined : agentNeeds.find((item) => item.id === agentId);
   const session = agentId === null ? undefined : sessions.get(agentId);
   const character = agentId === null ? undefined : officeState.characters.get(agentId);
-  const roomLabel = character?.directoryName ?? null;
+  const task =
+    selection.taskId !== null
+      ? tasks.find((item) => item.id === selection.taskId)
+      : agentId === null
+        ? undefined
+        : tasks.find((item) => item.agentId === agentId);
+  const roomLabel = selection.room ?? character?.directoryName ?? task?.room ?? null;
   const room = roomLabel ? rooms.find((item) => item.label === roomLabel) : undefined;
+  const item = findItem(items, selection, character?.directoryName ?? null);
   const inOffice = agentId !== null && terminalAgentIds.includes(agentId);
   const present = agentId !== null && agents.includes(agentId);
   const busy = agentId !== null && (agentTools[agentId] ?? []).some((tool) => !tool.done);
-  const view = sessionStateView(session, need?.kind ?? null, busy, character?.isActive);
+  const view =
+    item && (item.agentId === agentId || agentId === null)
+      ? item.view
+      : sessionStateView(session, need?.kind ?? null, busy, character?.isActive);
   const checks = room?.pr?.checks ? CHECKS_ICON[room.pr.checks] : undefined;
-  const task = agentId === null ? undefined : tasks.find((item) => item.agentId === agentId);
   const title =
-    session?.title ??
-    task?.title ??
-    room?.pr?.title ??
+    (room?.pr && cleanTitle(room.pr.title)) ||
+    session?.title ||
+    task?.title ||
+    item?.title ||
+    room?.branch ||
+    roomLabel ||
     (agentId === null ? '' : `Session ${agentId}`);
 
   const frame = full ? 'fixed inset-0 z-[60]' : 'relative h-full shrink-0 border-l border-line';
@@ -200,22 +213,22 @@ export function TaskPanel({
         <IconButton icon="close" label="Close" onClick={closePanel} data-testid="panel-close" />
       </div>
       <div className="flex items-center gap-2 px-12 border-b border-line">
-        {TABS.map((item) => (
+        {TABS.map((entry) => (
           <button
-            key={item.id}
+            key={entry.id}
             type="button"
-            onClick={() => showTab(item.id)}
+            onClick={() => showTab(entry.id)}
             className={`inline-flex items-center gap-6 h-[38px] px-10 -mb-px border-0 border-b-2 bg-transparent text-ui-sm font-semibold cursor-pointer ${
-              tab === item.id
+              tab === entry.id
                 ? 'border-state-working text-ink'
                 : 'border-transparent text-ink-muted hover:text-ink'
             }`}
-            data-testid={`panel-tab-${item.id}`}
+            data-testid={`panel-tab-${entry.id}`}
           >
             <span className="material-symbols-sharp text-[17px]" aria-hidden="true">
-              {item.icon}
+              {entry.icon}
             </span>
-            {item.label}
+            {entry.label}
           </button>
         ))}
         <div className="flex-1" />
@@ -236,13 +249,15 @@ export function TaskPanel({
           className={tab === 'conversation' ? 'absolute inset-0 flex flex-col' : 'hidden'}
           data-testid="panel-conversation"
         >
-          {agentId !== null && (
+          {agentId !== null ? (
             <ConversationView
               agentId={agentId}
               inOffice={inOffice}
               needsApproval={need?.kind === 'approval'}
               full={full}
             />
+          ) : (
+            <NoSessionView task={task} prUrl={room?.pr?.url ?? null} />
           )}
         </div>
         <div
@@ -256,6 +271,11 @@ export function TaskPanel({
               onStatusChange={onTerminalStatus}
               paneClassName="inset-0"
             />
+          )}
+          {agentId === null && (
+            <div className="absolute inset-0 flex items-center justify-center px-24 text-center bg-surface text-ui-base text-ink-muted">
+              No session runs here, so there is no terminal to show.
+            </div>
           )}
           {!inOffice && agentId !== null && (
             <div className="absolute inset-0 flex flex-col items-center justify-center gap-12 px-24 text-center bg-surface">

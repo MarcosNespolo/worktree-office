@@ -88,7 +88,9 @@ export async function prepareDemo(): Promise<DemoEnvironment> {
             root: repo,
             github: DEMO_GITHUB_REPO,
             fields: [{ name: 'stage', pattern: '^stage:(.+)$', from: 'labels' }],
-            needsYou: [{ field: 'stage', values: ['qa'], title: 'Ready for your QA' }],
+            needsYou: [
+              { field: 'stage', values: ['qa'], title: 'Ready for your QA', state: 'ready' },
+            ],
           },
         ],
       },

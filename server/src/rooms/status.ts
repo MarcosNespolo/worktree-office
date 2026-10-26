@@ -50,9 +50,12 @@ export type RoomNeedKind =
   | 'dev-server'
   | 'field';
 
+export type RoomNeedState = 'attention' | 'ready' | 'idle';
+
 export interface RoomNeed {
   id: string;
   kind: RoomNeedKind;
+  state: RoomNeedState;
   room: string;
   title: string;
   url: string | null;
@@ -101,10 +104,17 @@ export function fieldsFor(
 export function needsFor(info: RoomInfo, project: ProjectConfig | undefined): RoomNeed[] {
   const needs: RoomNeed[] = [];
   const pr = info.pr;
-  const add = (kind: RoomNeedKind, title: string, url: string | null, suffix = ''): void => {
+  const add = (
+    kind: RoomNeedKind,
+    state: RoomNeedState,
+    title: string,
+    url: string | null,
+    suffix = '',
+  ): void => {
     needs.push({
       id: `${kind}:${info.project}:${info.label}${pr ? `:${pr.number}` : ''}${suffix}`,
       kind,
+      state,
       room: info.label,
       title,
       url,
@@ -113,20 +123,22 @@ export function needsFor(info: RoomInfo, project: ProjectConfig | undefined): Ro
   };
   if (pr && (pr.state === 'open' || pr.state === 'draft')) {
     if (pr.review === 'changes-requested')
-      add('changes-requested', `Changes requested on #${pr.number}`, pr.url);
-    if (pr.checks === 'failing') add('checks-failing', `Checks failing on #${pr.number}`, pr.url);
+      add('changes-requested', 'attention', `Changes requested on #${pr.number}`, pr.url);
+    if (pr.checks === 'failing')
+      add('checks-failing', 'attention', `Checks failing on #${pr.number}`, pr.url);
     if (
       pr.state === 'open' &&
       pr.review === 'approved' &&
       pr.checks !== 'failing' &&
       pr.checks !== 'pending'
     ) {
-      add('ready-to-merge', `#${pr.number} is approved and ready to merge`, pr.url);
+      add('ready-to-merge', 'ready', `#${pr.number} is approved and ready to merge`, pr.url);
     }
   }
   if (pr && (pr.state === 'merged' || pr.state === 'closed') && info.branch) {
     add(
       'stale-worktree',
+      pr.state === 'merged' ? 'ready' : 'idle',
       `#${pr.number} was ${pr.state}, so this worktree can be released`,
       pr.url,
     );
@@ -134,6 +146,7 @@ export function needsFor(info: RoomInfo, project: ProjectConfig | undefined): Ro
   if (!info.branch && info.serverUp && info.port !== null) {
     add(
       'dev-server',
+      'idle',
       `Dev server still running on port ${info.port} in a free worktree`,
       info.devUrl,
     );
@@ -143,6 +156,7 @@ export function needsFor(info: RoomInfo, project: ProjectConfig | undefined): Ro
     if (value && (rule.values.length === 0 || rule.values.includes(value))) {
       add(
         'field',
+        rule.state ?? 'attention',
         rule.title ?? `${rule.field}: ${value}`,
         info.devUrl ?? pr?.url ?? null,
         `:${rule.field}`,

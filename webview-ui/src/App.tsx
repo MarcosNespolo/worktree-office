@@ -38,13 +38,13 @@ import { migrateLayoutColors } from './office/layout/layoutSerializer.js';
 import { overlayProjection } from './office/projection.js';
 import { getPetCount } from './office/sprites/petSpriteData.js';
 import { EditTool, type OfficeLayout, TILE_SIZE } from './office/types.js';
-import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
+import { NewTaskDialog } from './rooms/NewTaskDialog.js';
 import { ReleaseDialog, ReleaseNotice } from './rooms/ReleaseDialog.js';
 import { ReplyNotice } from './rooms/ReplyNotice.js';
 import { RoomSigns } from './rooms/RoomSigns.js';
 import { selectSession } from './rooms/selectionStore.js';
-import { TaskBox } from './rooms/TaskBox.js';
 import { TaskPanel } from './rooms/TaskPanel.js';
+import { TaskRail } from './rooms/TaskRail.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
 import { installTestHooks } from './testHooks.js';
 import { transport } from './transport/index.js';
@@ -138,6 +138,7 @@ function App() {
   const [isHooksInfoOpen, setIsHooksInfoOpen] = useState(false);
   const [hooksTooltipDismissed, setHooksTooltipDismissed] = useState(false);
   const [isDebugMode, setIsDebugMode] = useState(false);
+  const [isNewTaskOpen, setIsNewTaskOpen] = useState(false);
   const [alwaysShowOverlay, setAlwaysShowOverlay] = useState(false);
 
   // Mobile shell (phones, touch tablets): office and terminal as sliding
@@ -497,17 +498,6 @@ function App() {
           {/* Mobile: pinch replaces the zoom buttons, and the toolbar's
                 jobs move to the card bar (+) and the floating Settings button. */}
           {!isMobile && <ZoomControls zoom={editor.zoom} onZoomChange={editor.handleZoomChange} />}
-          {!isMobile && (
-            <NeedsYouPanel
-              officeState={officeState}
-              agents={agents}
-              agentStatuses={agentStatuses}
-              agentAwaitingInput={agentAwaitingInput}
-              agentTools={agentTools}
-              terminalAgentIds={terminalAgentIds}
-            />
-          )}
-          {!isMobile && <TaskBox terminalAgentIds={terminalAgentIds} />}
 
           {/* Vignette overlay */}
           <div
@@ -592,6 +582,7 @@ function App() {
             alwaysShowOverlay={alwaysShowOverlay}
           />
           <ReleaseDialog />
+          <NewTaskDialog open={isNewTaskOpen} onClose={() => setIsNewTaskOpen(false)} />
           <ReleaseNotice />
           <ReplyNotice />
           <RoomSigns
@@ -745,6 +736,16 @@ function App() {
         />
       ) : (
         <>
+          {!isDebugMode && (
+            <TaskRail
+              officeState={officeState}
+              agents={agents}
+              agentStatuses={agentStatuses}
+              agentAwaitingInput={agentAwaitingInput}
+              agentTools={agentTools}
+              onNewTask={() => setIsNewTaskOpen(true)}
+            />
+          )}
           {officeRegion}
 
           {/* Standalone with a terminal: terminalAvailable is only ever true when
