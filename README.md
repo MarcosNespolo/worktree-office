@@ -99,6 +99,8 @@ The "Needs you" panel lists what is waiting on you:
 - worktrees whose pull request was merged or closed, ready to be released;
 - dev servers still running in a worktree that is free.
 
+Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room. **Show** selects it in the office.
+
 Click **alerts off** in the panel header to get a system notification whenever a new item shows up while the office tab is not focused. The browser asks for permission the first time.
 
 These project fields tune the signs and the panel:
