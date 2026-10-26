@@ -14,17 +14,17 @@ export function ReplyNotice() {
   if (sending === null && !result) return null;
   return (
     <div
-      className="absolute bottom-60 left-1/2 -translate-x-1/2 z-30 pixel-panel px-14 py-8 text-base max-w-[640px]"
+      className="absolute bottom-60 left-1/2 -translate-x-1/2 z-30 ui-panel ui-surface px-16 py-10 text-ui-base max-w-[640px]"
       data-testid="reply-notice"
     >
       {sending !== null && !result ? (
-        <span className="text-text-muted">
+        <span className="text-ink-muted">
           {kind === 'terminal'
             ? 'Opening the session in an office terminal...'
             : 'Sending your reply...'}
         </span>
       ) : (
-        <span className={result?.ok ? 'text-status-success' : 'text-danger'}>
+        <span className={result?.ok ? 'text-state-ready' : 'text-state-failed'}>
           {result?.message}
         </span>
       )}

@@ -48,6 +48,24 @@
   /* Non-utility values */
   --vignette: radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.6) 100%);
   --btn-disabled-opacity: 0.35;
+
+  /* Reading surfaces (worktree-office panels) */
+  --color-surface: #1b1c29;
+  --color-surface-raised: #252739;
+  --color-surface-hover: #2e3046;
+  --color-surface-sunken: #141520;
+  --color-line: #34364d;
+  --color-line-strong: #4a4d6a;
+  --color-ink: #e9eaf2;
+  --color-ink-muted: #a6a9bd;
+  --color-ink-faint: #7a7d96;
+
+  /* One color per task state, used on panels, signs and rooms */
+  --color-state-attention: #f2b33d;
+  --color-state-working: #5b9cf5;
+  --color-state-ready: #46c46e;
+  --color-state-idle: #8a8da3;
+  --color-state-failed: #f06464;
 }
 
 @theme inline {
@@ -55,6 +73,11 @@
   --spacing: 1px;
 
   --font-pixel: 'FS Pixel Sans', sans-serif;
+  --font-ui:
+    'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial,
+    sans-serif;
+  --font-code:
+    'Cascadia Mono', 'Cascadia Code', Consolas, 'SF Mono', Menlo, 'Liberation Mono', monospace;
 
   /* Text sizes (pixel-art scale, base = 22px) */
   --text-*: initial;
@@ -68,6 +91,16 @@
   --text-3xl: 44px;
   --text-4xl: 52px;
   --text-5xl: 64px;
+
+  /* Text sizes for reading surfaces, in the system font */
+  --text-ui-2xs: 11px;
+  --text-ui-xs: 12px;
+  --text-ui-sm: 13px;
+  --text-ui-base: 14px;
+  --text-ui-md: 16px;
+  --text-ui-md--line-height: 1.6;
+  --text-ui-lg: 18px;
+  --text-ui-xl: 22px;
 
   /* Colors — reference :root vars so VS Code shows swatches */
   --color-bg: var(--color-bg);
@@ -88,6 +121,20 @@
   --color-status-active: var(--color-status-active);
   --color-status-success: var(--color-status-success);
   --color-status-error: var(--color-status-error);
+  --color-surface: var(--color-surface);
+  --color-surface-raised: var(--color-surface-raised);
+  --color-surface-hover: var(--color-surface-hover);
+  --color-surface-sunken: var(--color-surface-sunken);
+  --color-line: var(--color-line);
+  --color-line-strong: var(--color-line-strong);
+  --color-ink: var(--color-ink);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-faint: var(--color-ink-faint);
+  --color-state-attention: var(--color-state-attention);
+  --color-state-working: var(--color-state-working);
+  --color-state-ready: var(--color-state-ready);
+  --color-state-idle: var(--color-state-idle);
+  --color-state-failed: var(--color-state-failed);
 
   /* Shadow */
   --shadow-pixel: var(--shadow-pixel);
@@ -118,6 +165,230 @@
   /* Panel with standard pixel-art border + shadow */
   .pixel-panel {
     @apply bg-bg border-2 border-border rounded-none shadow-pixel;
+  }
+
+  /* Reading surfaces: system font for everything inside, pixel font stays on
+     the map. Components outrank the base layer's "* { font-pixel }". */
+  .ui-surface,
+  .ui-surface * {
+    font-family: var(--font-ui);
+  }
+  .ui-surface code,
+  .ui-surface pre,
+  .ui-surface kbd,
+  .ui-surface samp {
+    font-family: var(--font-code);
+  }
+  .ui-surface .material-symbols-sharp {
+    font-family: 'Material Symbols Sharp';
+  }
+
+  .ui-panel {
+    background: var(--color-surface);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
+    border-radius: 10px;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.03) inset,
+      0 14px 36px rgba(0, 0, 0, 0.45);
+  }
+
+  .ui-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 7px;
+    border: 1px solid var(--color-line-strong);
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+      background-color 0.12s,
+      border-color 0.12s,
+      color 0.12s;
+  }
+  .ui-btn-md {
+    height: 34px;
+    padding: 0 14px;
+  }
+  .ui-btn-sm {
+    height: 28px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+  .ui-btn:hover:not(:disabled) {
+    background: var(--color-surface-hover);
+  }
+  .ui-btn:disabled {
+    opacity: 0.45;
+    cursor: default;
+  }
+  .ui-btn-primary {
+    background: var(--color-accent);
+    border-color: var(--color-accent);
+    color: #fff;
+  }
+  .ui-btn-primary:hover:not(:disabled) {
+    background: var(--color-accent-bright);
+    border-color: var(--color-accent-bright);
+  }
+  .ui-btn-ghost {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-ink-muted);
+  }
+  .ui-btn-ghost:hover:not(:disabled) {
+    color: var(--color-ink);
+  }
+  .ui-icon-btn {
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    color: var(--color-ink-muted);
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .ui-icon-btn:hover:not(:disabled) {
+    background: var(--color-surface-raised);
+    color: var(--color-ink);
+  }
+  .ui-btn:focus-visible,
+  .ui-icon-btn:focus-visible,
+  .ui-input:focus-visible {
+    outline: 2px solid var(--color-state-working);
+    outline-offset: 1px;
+  }
+  .ui-input {
+    background: var(--color-surface-sunken);
+    color: var(--color-ink);
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .ui-input::placeholder {
+    color: var(--color-ink-faint);
+  }
+
+  /* Markdown read in panels: 16px, 1.6 line height, wrapped code */
+  .md {
+    font-size: 16px;
+    line-height: 1.6;
+    color: var(--color-ink);
+    overflow-wrap: anywhere;
+  }
+  .md > * + * {
+    margin-top: 0.7em;
+  }
+  .md :is(h1, h2, h3, h4) {
+    font-weight: 650;
+    line-height: 1.3;
+    color: #fff;
+  }
+  .md > :is(h1, h2, h3, h4):not(:first-child) {
+    margin-top: 1.2em;
+  }
+  .md h1 {
+    font-size: 1.3em;
+  }
+  .md h2 {
+    font-size: 1.17em;
+  }
+  .md :is(h3, h4) {
+    font-size: 1.04em;
+  }
+  .md strong {
+    font-weight: 650;
+    color: #fff;
+  }
+  .md :is(ul, ol) {
+    padding-left: 1.5em;
+  }
+  .md ul {
+    list-style: disc;
+  }
+  .md ol {
+    list-style: decimal;
+  }
+  .md li + li,
+  .md li > :is(ul, ol) {
+    margin-top: 0.3em;
+  }
+  .md li::marker {
+    color: var(--color-ink-muted);
+  }
+  .md a {
+    color: #8db7ff;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .md code {
+    font-size: 0.86em;
+    background: var(--color-surface-raised);
+    border-radius: 4px;
+    padding: 0.12em 0.35em;
+  }
+  .md pre {
+    background: var(--color-surface-sunken);
+    border: 1px solid var(--color-line);
+    border-radius: 8px;
+    padding: 10px 12px;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 0.84em;
+    line-height: 1.55;
+  }
+  .md pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+  .md blockquote {
+    border-left: 3px solid var(--color-line-strong);
+    padding-left: 12px;
+    color: var(--color-ink-muted);
+  }
+  .md table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.9em;
+  }
+  .md :is(th, td) {
+    border: 1px solid var(--color-line);
+    padding: 6px 10px;
+    text-align: left;
+    vertical-align: top;
+  }
+  .md th {
+    background: var(--color-surface-raised);
+    font-weight: 650;
+  }
+  .md hr {
+    border: 0;
+    border-top: 1px solid var(--color-line);
+  }
+  .md img {
+    display: block;
+    max-width: 100%;
+    max-height: 420px;
+    border-radius: 8px;
+    border: 1px solid var(--color-line);
+    cursor: zoom-in;
+  }
+  .md input[type='checkbox'] {
+    margin-right: 6px;
   }
 
   /* Horizontal carousel for editor items */

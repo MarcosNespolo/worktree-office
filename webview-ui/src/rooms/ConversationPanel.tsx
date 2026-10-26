@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 
-import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import {
   answerPermission,
@@ -15,6 +14,7 @@ import { replyHint } from './replyHint.js';
 import { useReplyState } from './replyStore.js';
 import { idleLabel, useSessionsInfo } from './sessionsStore.js';
 import { TerminalButton } from './TerminalButton.js';
+import { IconButton, UiButton } from './ui.js';
 
 const REFRESH_AFTER_REPLY_MS = 3_000;
 
@@ -90,22 +90,20 @@ export function ConversationPanel({
     if (inOffice) onOpenTerminal(agentId);
   };
   const frame = full
-    ? 'fixed inset-0 z-[60]'
-    : 'absolute top-[72px] left-8 z-[44] w-[560px] max-w-[calc(100%-420px)] max-h-[calc(100vh-150px)]';
-  const column = full ? 'w-full max-w-[1100px] mx-auto' : '';
+    ? 'fixed inset-0 z-[60] rounded-none'
+    : 'absolute top-[72px] left-12 z-[44] w-[640px] max-w-[calc(100%-420px)] max-h-[calc(100vh-150px)]';
+  const column = full ? 'w-full max-w-[780px] mx-auto' : '';
 
   return (
     <div
-      className={`${frame} pixel-panel flex flex-col`}
+      className={`${frame} ui-panel ui-surface flex flex-col`}
       data-testid="conversation-panel"
       data-full={full ? 'true' : 'false'}
     >
-      <div className="flex items-center gap-10 px-10 py-6 border-b-2 border-border">
+      <div className="flex items-center gap-8 px-16 py-12 border-b border-line">
         <div className="flex-1 min-w-0">
-          <div className="text-lg leading-tight overflow-hidden text-ellipsis whitespace-nowrap">
-            {title}
-          </div>
-          <div className="text-2xs text-text-muted">
+          <div className="text-ui-lg font-semibold leading-tight truncate">{title}</div>
+          <div className="text-ui-xs text-ink-muted mt-2">
             {room}
             {idle ? ` · ${idle}` : ''}
             {inOffice ? ' · office terminal' : ''}
@@ -118,91 +116,87 @@ export function ConversationPanel({
           onReveal={show}
           onLeave={() => setFull(false)}
         />
-        <Button
-          size="sm"
+        <IconButton
+          icon={full ? 'close_fullscreen' : 'open_in_full'}
+          label={full ? 'Exit full screen (Esc)' : 'Full screen'}
           onClick={() => setFull((value) => !value)}
-          title={full ? 'Back to the window (Esc)' : 'Read this conversation in full screen'}
           data-testid="conversation-full"
-        >
-          {full ? 'Exit full screen' : 'Full screen'}
-        </Button>
-        <button
-          type="button"
+        />
+        <IconButton
+          icon="close"
+          label="Close"
           onClick={() => {
             setFull(false);
             closeConversation();
           }}
-          title="Close"
-          className="p-0 bg-transparent border-0 text-lg text-text-muted hover:text-text cursor-pointer"
           data-testid="conversation-close"
-        >
-          ×
-        </button>
+        />
       </div>
       <div
         ref={scroller}
-        className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-10 py-6"
+        className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-20 py-16"
         data-testid="conversation-messages"
       >
-        <div className={`${column} flex flex-col gap-10`}>
+        <div className={`${column} flex flex-col gap-20`}>
           {truncated && (
-            <div className="text-2xs text-text-muted text-center">
+            <div className="text-ui-xs text-ink-faint text-center">
               Older messages are not shown.
             </div>
           )}
           {loading && messages.length === 0 && (
-            <div className="text-sm text-text-muted">Reading the conversation...</div>
+            <div className="text-ui-base text-ink-muted">Reading the conversation...</div>
           )}
           {!loading && messages.length === 0 && (
-            <div className="text-sm text-text-muted">No messages yet.</div>
+            <div className="text-ui-base text-ink-muted">No messages yet.</div>
           )}
           {messages.map((message, index) => (
             <div
               key={`${message.at ?? 0}-${index}`}
-              className={`${full ? 'text-base' : 'text-sm'} leading-snug ${message.role === 'user' ? 'pl-24' : 'pr-24'}`}
+              className={`flex flex-col ${message.role === 'user' ? 'items-end' : 'items-stretch'}`}
               data-testid={`conversation-${message.role}`}
             >
-              <div
-                className={`text-2xs mb-2 ${message.role === 'user' ? 'text-accent-bright text-right' : 'text-text-muted'}`}
-              >
+              <div className="text-ui-xs text-ink-faint mb-4">
                 {message.role === 'user' ? 'You' : 'Claude'}
                 {message.at !== null ? ` · ${timeOf(message.at)}` : ''}
               </div>
-              <div
-                className={`px-8 py-6 border-2 border-border ${message.role === 'user' ? 'bg-bg-dark' : ''}`}
-              >
+              {message.role === 'user' ? (
+                <div className="max-w-[85%] bg-surface-raised border border-line rounded-[12px] px-14 py-10">
+                  <Markdown text={message.text} />
+                </div>
+              ) : (
                 <Markdown text={message.text} />
-              </div>
+              )}
             </div>
           ))}
         </div>
       </div>
-      <div className="px-10 py-6 border-t-2 border-border">
+      <div className="px-16 py-12 border-t border-line">
         <div className={column}>
           {needsApproval && inOffice && (
-            <div className="flex items-center gap-8 mb-6" data-testid="conversation-approval">
-              <span className="flex-1 text-sm text-status-permission">
+            <div
+              className="flex items-center gap-10 mb-10 px-12 py-8 rounded-[8px] border border-state-attention/40 bg-state-attention/10"
+              data-testid="conversation-approval"
+            >
+              <span className="flex-1 text-ui-base font-semibold text-state-attention">
                 Claude Code asks for permission.
               </span>
-              <Button
-                size="sm"
-                variant="accent"
+              <UiButton
+                variant="primary"
                 onClick={() => answerPermission(agentId, true)}
                 data-testid="conversation-approve"
               >
                 Approve
-              </Button>
-              <Button
-                size="sm"
+              </UiButton>
+              <UiButton
                 onClick={() => answerPermission(agentId, false)}
                 data-testid="conversation-deny"
               >
                 Deny
-              </Button>
+              </UiButton>
             </div>
           )}
           {needsApproval && !inOffice && (
-            <div className="text-2xs text-status-permission mb-6">
+            <div className="text-ui-sm text-state-attention mb-8">
               This session waits for a permission answer in the app it runs in.
             </div>
           )}

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 
 import type { RoomInfo, RoomNeed, SessionInfo } from '../../../core/src/messages.js';
-import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
@@ -14,6 +13,7 @@ import { useRoomsState } from './roomsStore.js';
 import { useSessionsInfo } from './sessionsStore.js';
 import { useTasksState } from './tasksStore.js';
 import { TerminalButton } from './TerminalButton.js';
+import { UiButton } from './ui.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
@@ -55,7 +55,7 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-sm text-accent-bright hover:text-accent no-underline"
+      className="text-ui-base text-accent-bright hover:text-accent no-underline"
     >
       {children}
     </a>
@@ -88,7 +88,23 @@ function sessionForNeed(
   );
 }
 
-function endOf(text: string): string {
+function plainText(markdown: string): string {
+  return markdown
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '[image]')
+    .replace(/```[\w-]*/g, '')
+    .replace(/^\s*\|.*\|\s*$/gm, '')
+    .replace(/^\s*[-*+]\s+\[[ xX]\]\s+/gm, '')
+    .replace(/^\s*[-*+]\s+/gm, '')
+    .replace(/^\s*>\s?/gm, '')
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function endOf(markdown: string): string {
+  const text = plainText(markdown);
   if (text.length <= MESSAGE_END_CHARS) return text;
   const end = text.slice(-MESSAGE_END_CHARS);
   const wordStart = end.indexOf(' ');
@@ -97,7 +113,7 @@ function endOf(text: string): string {
 
 function SessionLine({ room, session }: { room: string; session: SessionInfo | null | undefined }) {
   return (
-    <div className="text-2xs text-text-muted flex items-center gap-6">
+    <div className="text-ui-xs text-ink-muted flex items-center gap-6">
       <span className="overflow-hidden text-ellipsis whitespace-nowrap">
         {session?.title ? `${room} · ${session.title}` : room}
       </span>
@@ -105,7 +121,7 @@ function SessionLine({ room, session }: { room: string; session: SessionInfo | n
         <button
           type="button"
           onClick={() => openConversation(session.id)}
-          className="shrink-0 bg-transparent border-0 p-0 text-2xs text-accent-bright hover:text-accent cursor-pointer"
+          className="shrink-0 bg-transparent border-0 p-0 text-ui-xs text-accent-bright hover:text-accent cursor-pointer"
           data-testid="needs-you-read"
         >
           conversation
@@ -122,7 +138,7 @@ function LastMessage({ session }: { session: SessionInfo | null | undefined }) {
       type="button"
       onClick={() => openConversation(session.id)}
       title="Read the whole conversation"
-      className="block w-full text-left bg-transparent border-0 p-0 text-2xs text-text-muted hover:text-text leading-tight mt-2 line-clamp-4 cursor-pointer font-[inherit]"
+      className="block w-full text-left bg-transparent border-0 p-0 text-ui-xs text-ink-muted hover:text-ink leading-tight mt-2 line-clamp-4 cursor-pointer font-[inherit]"
       data-testid="needs-you-message"
     >
       {endOf(session.lastText)}
@@ -143,11 +159,11 @@ function NeedRow({
 }) {
   return (
     <div
-      className="px-10 py-6 border-b border-border flex items-center gap-10"
+      className="px-10 py-6 border-b border-line flex items-center gap-10"
       data-testid="needs-you-item"
     >
       <div className="flex-1 min-w-0">
-        <div className="text-sm leading-tight">{need.title}</div>
+        <div className="text-ui-base leading-tight">{need.title}</div>
         <SessionLine room={need.room} session={session} />
         <LastMessage session={session} />
         {session && (
@@ -165,9 +181,9 @@ function NeedRow({
       {need.url && <ExternalLink href={need.url}>Open</ExternalLink>}
       {need.prUrl && need.prUrl !== need.url && <ExternalLink href={need.prUrl}>PR</ExternalLink>}
       {RELEASABLE.has(need.kind) && (
-        <Button size="sm" onClick={() => requestRelease(need.room)}>
+        <UiButton size="sm" onClick={() => requestRelease(need.room)}>
           Release
-        </Button>
+        </UiButton>
       )}
     </div>
   );
@@ -231,14 +247,14 @@ export function NeedsYouPanel({
         onOpenTerminal={onOpenTerminal}
       />
       <div
-        className="absolute top-8 right-8 z-[44] w-[380px] pixel-panel flex flex-col"
+        className="absolute top-8 right-8 z-[44] w-[380px] ui-panel ui-surface flex flex-col"
         data-testid="needs-you-panel"
       >
         <div className="flex items-center gap-10 px-10 py-6">
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="flex-1 text-left p-0 bg-transparent border-0 text-text text-lg cursor-pointer"
+            className="flex-1 text-left p-0 bg-transparent border-0 text-ink text-ui-md font-semibold cursor-pointer"
           >
             {total > 0 ? `Needs you (${total})` : 'Needs you'}
           </button>
@@ -247,8 +263,8 @@ export function NeedsYouPanel({
               type="button"
               onClick={notify.toggle}
               title={NOTIFY_HINT[notify.state]}
-              className={`p-0 bg-transparent border-0 text-sm cursor-pointer ${
-                notify.state === 'on' ? 'text-accent-bright' : 'text-text-muted'
+              className={`p-0 bg-transparent border-0 text-ui-base cursor-pointer ${
+                notify.state === 'on' ? 'text-accent-bright' : 'text-ink-muted'
               }`}
               data-testid="needs-you-notify"
             >
@@ -258,24 +274,28 @@ export function NeedsYouPanel({
           <button
             type="button"
             onClick={() => setOpen((value) => !value)}
-            className="p-0 bg-transparent border-0 text-sm text-text-muted cursor-pointer"
+            className="p-0 bg-transparent border-0 text-ui-base text-ink-muted cursor-pointer"
           >
             {open ? 'hide' : 'show'}
           </button>
         </div>
         {open && (
-          <div className="max-h-[50vh] overflow-y-auto pixel-scrollbar border-t-2 border-border">
+          <div className="max-h-[50vh] overflow-y-auto pixel-scrollbar border-t border-line">
             {total === 0 && (
-              <div className="px-10 py-8 text-sm text-text-muted">Nothing needs you right now.</div>
+              <div className="px-10 py-8 text-ui-base text-ink-muted">
+                Nothing needs you right now.
+              </div>
             )}
             {agentNeeds.map((need) => (
               <div
                 key={`agent-${need.id}`}
-                className="px-10 py-6 border-b border-border flex items-center gap-10"
+                className="px-10 py-6 border-b border-line flex items-center gap-10"
                 data-testid="needs-you-item"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm leading-tight text-status-permission">{need.title}</div>
+                  <div className="text-ui-base leading-tight text-state-attention">
+                    {need.title}
+                  </div>
                   <SessionLine room={need.room} session={sessions.get(need.id)} />
                   <LastMessage session={sessions.get(need.id)} />
                   {(inOffice(need.id) || (need.kind === 'input' && sessions.has(need.id))) && (
@@ -295,21 +315,23 @@ export function NeedsYouPanel({
                     onReveal={focus}
                   />
                 ) : (
-                  <Button size="sm" onClick={() => focus(need.id)}>
+                  <UiButton size="sm" onClick={() => focus(need.id)}>
                     Show
-                  </Button>
+                  </UiButton>
                 )}
               </div>
             ))}
             {blockedTasks.map((task) => (
               <div
                 key={`task-${task.id}`}
-                className="px-10 py-6 border-b border-border flex items-center gap-10"
+                className="px-10 py-6 border-b border-line flex items-center gap-10"
                 data-testid="needs-you-item"
               >
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm leading-tight text-status-permission">{task.detail}</div>
-                  <div className="text-2xs text-text-muted">{task.room ?? task.title}</div>
+                  <div className="text-ui-base leading-tight text-state-attention">
+                    {task.detail}
+                  </div>
+                  <div className="text-ui-xs text-ink-muted">{task.room ?? task.title}</div>
                   {task.agentId !== null && inOffice(task.agentId) && (
                     <ReplyBox agentId={task.agentId} images={false} menu />
                   )}
@@ -336,7 +358,7 @@ export function NeedsYouPanel({
           </div>
         )}
         {github === 'unavailable' && (
-          <div className="px-10 py-6 text-2xs text-warning border-t-2 border-border">
+          <div className="px-10 py-6 text-ui-xs text-warning border-t border-line">
             Pull requests unavailable: install the GitHub CLI and run gh auth login.
           </div>
         )}
