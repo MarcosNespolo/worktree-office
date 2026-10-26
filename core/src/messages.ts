@@ -52,7 +52,8 @@ export type ServerMessage =
   | ReleaseResult
   | TasksState
   | SessionsInfo
-  | ReplyResult;
+  | ReplyResult
+  | SessionMessages;
 
 export type ClientMessage =
   | WebviewReady
@@ -86,7 +87,9 @@ export type ClientMessage =
   | StartTasks
   | CancelTask
   | SendToAgent
-  | ReplyToSession;
+  | ReplyToSession
+  | GetSessionMessages
+  | AnswerPermission;
 
 export interface ProviderCapabilities {
   type: 'providerCapabilities';
@@ -501,6 +504,21 @@ export interface ReplyResult {
   message: string;
 }
 
+export interface SessionMessages {
+  type: 'sessionMessages';
+  agentId: number;
+  messages: ConversationMessage[];
+  truncated: boolean;
+}
+
+export interface ConversationMessage {
+  role: ConversationRole;
+  at: number | null;
+  text: string;
+}
+
+export type ConversationRole = 'user' | 'assistant';
+
 export interface WebviewReady {
   type: 'webviewReady';
 }
@@ -671,4 +689,16 @@ export interface ReplyToSession {
   agentId: number;
   text: string;
   images?: string[];
+}
+
+export interface GetSessionMessages {
+  type: 'getSessionMessages';
+  agentId: number;
+  limit?: number;
+}
+
+export interface AnswerPermission {
+  type: 'answerPermission';
+  agentId: number;
+  allow: boolean;
 }

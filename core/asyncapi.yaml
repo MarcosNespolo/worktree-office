@@ -134,6 +134,7 @@ components:
         - $ref: '#/components/schemas/TasksState'
         - $ref: '#/components/schemas/SessionsInfo'
         - $ref: '#/components/schemas/ReplyResult'
+        - $ref: '#/components/schemas/SessionMessages'
       discriminator: type
 
     ClientMessage:
@@ -171,6 +172,8 @@ components:
         - $ref: '#/components/schemas/CancelTask'
         - $ref: '#/components/schemas/SendToAgent'
         - $ref: '#/components/schemas/ReplyToSession'
+        - $ref: '#/components/schemas/GetSessionMessages'
+        - $ref: '#/components/schemas/AnswerPermission'
       discriminator: type
 
     # ── Server message variants ────────────────────────────────────
@@ -430,6 +433,70 @@ components:
           items:
             type: string
           description: Paths returned by POST /api/uploads, attached to the reply.
+
+    GetSessionMessages:
+      description: Ask for the recent conversation of a session, read from its transcript.
+      type: object
+      additionalProperties: false
+      required: [type, agentId]
+      properties:
+        type:
+          const: getSessionMessages
+        agentId:
+          type: integer
+        limit:
+          type: integer
+          description: How many messages at most, newest kept. Defaults to 40, at most 200.
+
+    AnswerPermission:
+      description: Answer the permission prompt of a session running in an office terminal, as key presses.
+      type: object
+      additionalProperties: false
+      required: [type, agentId, allow]
+      properties:
+        type:
+          const: answerPermission
+        agentId:
+          type: integer
+        allow:
+          type: boolean
+
+    SessionMessages:
+      description: Recent conversation of a session, sent to the client that asked.
+      type: object
+      additionalProperties: false
+      required: [type, agentId, messages, truncated]
+      properties:
+        type:
+          const: sessionMessages
+        agentId:
+          type: integer
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationMessage'
+        truncated:
+          type: boolean
+          description: True when older messages exist beyond the ones sent.
+
+    ConversationMessage:
+      description: One text message of a conversation. Tool calls, tool results and notifications are left out.
+      type: object
+      additionalProperties: false
+      required: [role, at, text]
+      properties:
+        role:
+          $ref: '#/components/schemas/ConversationRole'
+        at:
+          type: [integer, 'null']
+          description: Epoch milliseconds of the message.
+        text:
+          type: string
+
+    ConversationRole:
+      description: Who wrote a conversation message.
+      type: string
+      enum: [user, assistant]
 
     ReplyResult:
       description: Outcome of a replyToSession request, sent to the client that asked.

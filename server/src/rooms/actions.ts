@@ -1,12 +1,25 @@
 import type { ExtraClientMessageHandler } from '../httpServer.js';
+import {
+  CONVERSATION_DEFAULT_LIMIT,
+  CONVERSATION_MAX_LIMIT,
+  PERMISSION_ALLOW_KEYS,
+  PERMISSION_DENY_KEYS,
+} from './constants.js';
+import { readConversation } from './conversation.js';
 import { parseReleaseRequest, type ReleaseDeps, releaseRoom } from './release.js';
 import type { ReplyOutcome } from './reply.js';
+import type { SessionInfoTracker } from './sessionInfo.js';
 import type { TaskRunner } from './tasks.js';
 import { isUploadPath } from './uploads.js';
 
 export interface RoomActionDeps extends ReleaseDeps {
   tasks: TaskRunner;
+  sessionInfo: SessionInfoTracker;
   replyToSession: (agentId: number, text: string, images: string[]) => Promise<ReplyOutcome>;
+}
+
+function integerOr(value: unknown, fallback: number): number {
+  return typeof value === 'number' && Number.isInteger(value) ? value : fallback;
 }
 
 function imagesOf(msg: Record<string, unknown>): string[] {
@@ -76,6 +89,11 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
 
   return (msg, reply) => {
     switch (msg.type) {
+      case 'webviewReady':
+        reply(deps.status.snapshot() as unknown as Record<string, unknown>);
+        reply(deps.tasks.snapshot() as unknown as Record<string, unknown>);
+        reply(deps.sessionInfo.snapshot() as unknown as Record<string, unknown>);
+        return false;
       case 'releaseRoom':
         release(msg, reply);
         return true;
@@ -93,6 +111,25 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
           deps.tasks.send(msg.agentId, msg.text);
         }
         return true;
+      case 'answerPermission':
+        if (typeof msg.agentId === 'number' && typeof msg.allow === 'boolean') {
+          if (msg.allow) deps.tasks.send(msg.agentId, PERMISSION_ALLOW_KEYS);
+          else deps.tasks.press(msg.agentId, PERMISSION_DENY_KEYS);
+        }
+        return true;
+      case 'getSessionMessages': {
+        if (typeof msg.agentId !== 'number') return true;
+        const limit = Math.min(
+          CONVERSATION_MAX_LIMIT,
+          Math.max(1, integerOr(msg.limit, CONVERSATION_DEFAULT_LIMIT)),
+        );
+        const file = deps.store.get(msg.agentId)?.jsonlFile ?? '';
+        const conversation = file
+          ? readConversation(file, limit)
+          : { messages: [], truncated: false };
+        reply({ type: 'sessionMessages', agentId: msg.agentId, ...conversation });
+        return true;
+      }
       default:
         return false;
     }
