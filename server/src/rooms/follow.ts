@@ -4,6 +4,7 @@ import type { AgentState } from '../types.js';
 import { toForwardSlashes } from './glob.js';
 import type { RoomsManager } from './manager.js';
 import type { Room } from './rooms.js';
+import { transcriptCwd } from './transcript.js';
 
 interface SessionTrace {
   cwd?: string;
@@ -56,6 +57,7 @@ export function roomFromTool(
 
 export class SessionFollower {
   private readonly traces = new Map<string, SessionTrace>();
+  private readonly transcriptCwds = new Map<string, string>();
 
   constructor(
     private readonly store: AgentStateStore,
@@ -88,15 +90,24 @@ export class SessionFollower {
     }
   }
 
+  private cwdFromTranscript(agent: AgentState): string | undefined {
+    if (!agent.jsonlFile) return undefined;
+    const known = this.transcriptCwds.get(agent.jsonlFile);
+    if (known) return known;
+    const cwd = transcriptCwd(agent.jsonlFile);
+    if (cwd) this.transcriptCwds.set(agent.jsonlFile, cwd);
+    return cwd;
+  }
+
   private desiredDirectory(agent: AgentState): string | undefined {
     const trace = this.traces.get(agent.sessionId);
-    if (!trace) return undefined;
-    const cwdRoom = this.rooms.roomFor(trace.cwd);
+    const cwd = trace?.cwd ?? this.cwdFromTranscript(agent);
+    const cwdRoom = this.rooms.roomFor(cwd);
     if (cwdRoom) return cwdRoom.label;
-    if (trace.toolRoom && this.rooms.current.some((room) => room.label === trace.toolRoom)) {
+    if (trace?.toolRoom && this.rooms.current.some((room) => room.label === trace.toolRoom)) {
       return trace.toolRoom;
     }
-    return trace.cwd ? directoryNameFor(trace.cwd) : undefined;
+    return cwd ? directoryNameFor(cwd) : undefined;
   }
 
   private apply(agent: AgentState): void {

@@ -17,6 +17,7 @@ export const TASKS_BROADCAST_MS = 10_000;
 export const SESSION_SWEEP_INTERVAL_MS = 30_000;
 export const SESSION_IDLE_DEFAULT_MINUTES = 120;
 export const ACTIVITY_TAIL_STEPS: readonly number[] = [256 * 1024, 4 * 1024 * 1024];
+export const TRANSCRIPT_HEAD_BYTES = 256 * 1024;
 export const RELEASE_COMMAND_TIMEOUT_MS = 60_000;
 export const RELEASE_LOG_FILE_NAME = 'release.log';
 export const RELEASE_MAX_LISTED_FILES = 20;
