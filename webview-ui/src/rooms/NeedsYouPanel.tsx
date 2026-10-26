@@ -6,12 +6,18 @@ import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
 import { requestRelease } from './releaseStore.js';
+import { replyToSession, useReplyState } from './replyStore.js';
 import { useRoomsState } from './roomsStore.js';
 import { useSessionsInfo } from './sessionsStore.js';
-import { sendToAgent, useTasksState } from './tasksStore.js';
+import { useTasksState } from './tasksStore.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
+const APP_NAMES: Record<string, string> = {
+  'claude-vscode': 'VS Code',
+  'claude-desktop': 'the Claude app',
+  cli: 'another terminal',
+};
 const MESSAGE_END_CHARS = 160;
 const SESSION_NEED_KINDS = new Set<string>([
   'field',
@@ -56,28 +62,44 @@ function ExternalLink({ href, children }: { href: string; children: string }) {
   );
 }
 
-function ReplyBox({ agentId }: { agentId: number }) {
+function replyHint(session: SessionInfo | null | undefined, inOffice: boolean): string | null {
+  if (inOffice) return null;
+  const app = session?.app ? APP_NAMES[session.app] : undefined;
+  return app
+    ? `Replying moves this conversation from ${app} to an office terminal. Answer it only here from then on.`
+    : 'Replying continues this conversation in an office terminal.';
+}
+
+function ReplyBox({ agentId, hint }: { agentId: number; hint?: string | null }) {
   const [text, setText] = useState('');
+  const { sending } = useReplyState();
   const send = (): void => {
-    if (!text.trim()) return;
-    sendToAgent(agentId, text);
+    if (!text.trim() || sending !== null) return;
+    replyToSession(agentId, text);
     setText('');
   };
   return (
-    <div className="flex gap-6 mt-4">
-      <input
-        value={text}
-        onChange={(event) => setText(event.target.value)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter') send();
-        }}
-        placeholder="Reply, or 1, 2, 3 for a menu"
-        className="flex-1 min-w-0 bg-bg-dark text-text text-sm px-6 py-2 border-2 border-border outline-none font-[inherit]"
-        data-testid="reply-input"
-      />
-      <Button size="sm" onClick={send}>
-        Send
-      </Button>
+    <div className="mt-4">
+      <div className="flex gap-6">
+        <input
+          value={text}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') send();
+          }}
+          placeholder="Reply, or 1, 2, 3 for a menu"
+          className="flex-1 min-w-0 bg-bg-dark text-text text-sm px-6 py-2 border-2 border-border outline-none font-[inherit]"
+          data-testid="reply-input"
+        />
+        <Button size="sm" onClick={send} disabled={sending !== null}>
+          Send
+        </Button>
+      </div>
+      {hint && (
+        <div className="text-2xs text-text-muted leading-tight mt-2" data-testid="reply-hint">
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -135,10 +157,12 @@ function LastMessage({ session }: { session: SessionInfo | null | undefined }) {
 function NeedRow({
   need,
   session,
+  inOffice,
   onShow,
 }: {
   need: RoomNeed;
   session: SessionInfo | null;
+  inOffice: (agentId: number) => boolean;
   onShow: (id: number) => void;
 }) {
   return (
@@ -150,6 +174,9 @@ function NeedRow({
         <div className="text-sm leading-tight">{need.title}</div>
         <div className="text-2xs text-text-muted">{roomAndTitle(need.room, session)}</div>
         <LastMessage session={session} />
+        {session && (
+          <ReplyBox agentId={session.id} hint={replyHint(session, inOffice(session.id))} />
+        )}
       </div>
       {session && (
         <Button size="sm" onClick={() => onShow(session.id)}>
@@ -264,7 +291,13 @@ export function NeedsYouPanel({
                   {roomAndTitle(need.room, sessions.get(need.id))}
                 </div>
                 <LastMessage session={sessions.get(need.id)} />
-                {terminalAgentIds.includes(need.id) && <ReplyBox agentId={need.id} />}
+                {(terminalAgentIds.includes(need.id) ||
+                  (need.kind === 'input' && sessions.has(need.id))) && (
+                  <ReplyBox
+                    agentId={need.id}
+                    hint={replyHint(sessions.get(need.id), terminalAgentIds.includes(need.id))}
+                  />
+                )}
               </div>
               <Button size="sm" onClick={() => focus(need.id)}>
                 Show
@@ -294,6 +327,7 @@ export function NeedsYouPanel({
               key={need.id}
               need={need}
               session={sessionForNeed(need, rooms, sessions, officeState)}
+              inOffice={(agentId) => terminalAgentIds.includes(agentId)}
               onShow={focus}
             />
           ))}

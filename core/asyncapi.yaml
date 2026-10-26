@@ -133,6 +133,7 @@ components:
         - $ref: '#/components/schemas/ReleaseResult'
         - $ref: '#/components/schemas/TasksState'
         - $ref: '#/components/schemas/SessionsInfo'
+        - $ref: '#/components/schemas/ReplyResult'
       discriminator: type
 
     ClientMessage:
@@ -169,6 +170,7 @@ components:
         - $ref: '#/components/schemas/StartTasks'
         - $ref: '#/components/schemas/CancelTask'
         - $ref: '#/components/schemas/SendToAgent'
+        - $ref: '#/components/schemas/ReplyToSession'
       discriminator: type
 
     # ── Server message variants ────────────────────────────────────
@@ -406,6 +408,35 @@ components:
         text:
           type: string
 
+    ReplyToSession:
+      description: Answer a session from the office. A session in an office terminal gets the text typed in; any other idle session is continued in a new office terminal first.
+      type: object
+      additionalProperties: false
+      required: [type, agentId, text]
+      properties:
+        type:
+          const: replyToSession
+        agentId:
+          type: integer
+        text:
+          type: string
+
+    ReplyResult:
+      description: Outcome of a replyToSession request, sent to the client that asked.
+      type: object
+      additionalProperties: false
+      required: [type, agentId, ok, message]
+      properties:
+        type:
+          const: replyResult
+        agentId:
+          type: integer
+          description: Agent that received the reply, which is a new one when the session was continued in an office terminal.
+        ok:
+          type: boolean
+        message:
+          type: string
+
     TasksState:
       description: Every task started from the office, sent when it changes and every few seconds.
       type: object
@@ -469,7 +500,7 @@ components:
       description: Title, last activity and last message of one session.
       type: object
       additionalProperties: false
-      required: [id, title, lastActivityAt, lastText, prNumbers]
+      required: [id, title, lastActivityAt, lastText, prNumbers, app]
       properties:
         id:
           type: integer
@@ -488,6 +519,9 @@ components:
           items:
             type: integer
           description: Pull requests the session linked, most recent first.
+        app:
+          type: [string, 'null']
+          description: Where the session was started, as Claude Code records it, such as claude-vscode or cli.
 
     TaskStatus:
       description: Lifecycle of a task.

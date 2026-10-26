@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
   HooksConsentRequest,
   ReleaseResult,
+  ReplyResult,
   RoomsState,
   SessionsInfo,
   TasksState,
@@ -26,6 +27,7 @@ import {
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
 import { receiveReleaseResult } from '../rooms/releaseStore.js';
+import { receiveReplyResult } from '../rooms/replyStore.js';
 import { setRoomsState } from '../rooms/roomsStore.js';
 import { setSessionsInfo } from '../rooms/sessionsStore.js';
 import { setTasksState } from '../rooms/tasksStore.js';
@@ -420,6 +422,8 @@ export function useExtensionMessages(
         setTasksState(msg as unknown as TasksState);
       } else if (msg.type === 'sessionsInfo') {
         setSessionsInfo(msg as unknown as SessionsInfo);
+      } else if (msg.type === 'replyResult') {
+        receiveReplyResult(msg as unknown as ReplyResult);
       } else if (msg.type === 'releaseResult') {
         receiveReleaseResult(msg as unknown as ReleaseResult);
       } else if (msg.type === 'roomsState') {

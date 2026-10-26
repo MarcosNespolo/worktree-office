@@ -42,6 +42,7 @@ import { getPetCount } from './office/sprites/petSpriteData.js';
 import { EditTool, type OfficeLayout, TILE_SIZE } from './office/types.js';
 import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
 import { ReleaseDialog, ReleaseNotice } from './rooms/ReleaseDialog.js';
+import { ReplyNotice } from './rooms/ReplyNotice.js';
 import { RoomSigns } from './rooms/RoomSigns.js';
 import { TaskBox } from './rooms/TaskBox.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
@@ -597,6 +598,7 @@ function App() {
           />
           <ReleaseDialog />
           <ReleaseNotice />
+          <ReplyNotice />
           <RoomSigns
             officeState={officeState}
             containerRef={containerRef}

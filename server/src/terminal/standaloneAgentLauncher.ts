@@ -41,6 +41,7 @@ export interface LaunchStandaloneAgentOptions {
   /** Read from the host's persisted permission posture by the caller; never a
    *  per-launch choice made in the office. */
   bypassPermissions?: boolean;
+  resume?: { sessionId: string; transcriptPath: string };
   cols?: number;
   rows?: number;
 }
@@ -61,10 +62,11 @@ export function launchStandaloneAgent(
   }
 
   const cwd = options.directoryPath ?? process.cwd();
-  const sessionId = crypto.randomUUID();
+  const sessionId = options.resume?.sessionId ?? crypto.randomUUID();
 
   const launch = provider.buildLaunchCommand?.(sessionId, cwd, {
     bypassPermissions: options.bypassPermissions,
+    resume: options.resume !== undefined,
   });
   if (!launch) {
     console.error('[Pixel Agents] Terminal: provider.buildLaunchCommand is not implemented');
@@ -100,8 +102,17 @@ export function launchStandaloneAgent(
 
   // Pre-register the expected JSONL so the project scanner doesn't mistake it
   // for a /clear file, exactly as the VS Code path does.
-  const expectedFile = path.join(projectDir, `${sessionId}.jsonl`);
+  const expectedFile =
+    options.resume?.transcriptPath ?? path.join(projectDir, `${sessionId}.jsonl`);
   runtime.knownJsonlFiles.add(expectedFile);
+  let fileOffset = 0;
+  if (options.resume) {
+    try {
+      fileOffset = fs.statSync(expectedFile).size;
+    } catch {
+      fileOffset = 0;
+    }
+  }
 
   const agent = createAgentState({
     id,
@@ -112,6 +123,7 @@ export function launchStandaloneAgent(
     isExternal: false,
     projectDir,
     jsonlFile: expectedFile,
+    fileOffset,
     // The character's origin label (and its Area-mapping key): the name of the
     // Directory it was launched into, as the user named it — so an entry called
     // "Side Project" labels its agents that, not "side-project", and the Areas
