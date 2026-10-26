@@ -5,6 +5,7 @@ export interface AgentNeed {
   id: number;
   room: string;
   title: string;
+  kind: 'approval' | 'input';
 }
 
 const LOBBY_NAME = 'lobby';
@@ -20,9 +21,9 @@ export function collectAgentNeeds(
   for (const id of agents) {
     const room = officeState.characters.get(id)?.directoryName ?? LOBBY_NAME;
     if (agentTools[id]?.some((tool) => tool.permissionWait && !tool.done)) {
-      needs.push({ id, room, title: 'Needs approval' });
+      needs.push({ id, room, title: 'Needs approval', kind: 'approval' });
     } else if (agentStatuses[id] === 'waiting' && agentAwaitingInput[id]) {
-      needs.push({ id, room, title: 'Waiting for your input' });
+      needs.push({ id, room, title: 'Waiting for your input', kind: 'input' });
     }
   }
   return needs;
