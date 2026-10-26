@@ -1,9 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
-import type { OfficeState } from '../office/engine/officeState.js';
 import {
   answerPermission,
-  closeConversation,
   openConversation,
   refreshConversation,
   useConversation,
@@ -12,17 +10,16 @@ import { Markdown } from './markdown.js';
 import { ReplyBox } from './ReplyBox.js';
 import { replyHint } from './replyHint.js';
 import { useReplyState } from './replyStore.js';
-import { idleLabel, useSessionsInfo } from './sessionsStore.js';
-import { TerminalButton } from './TerminalButton.js';
-import { IconButton, UiButton } from './ui.js';
+import { useSessionsInfo } from './sessionsStore.js';
+import { UiButton } from './ui.js';
 
 const REFRESH_AFTER_REPLY_MS = 3_000;
 
-interface ConversationPanelProps {
-  officeState: OfficeState;
-  terminalAgentIds: number[];
-  approvalAgentIds: number[];
-  onOpenTerminal: (agentId: number) => void;
+interface ConversationViewProps {
+  agentId: number;
+  inOffice: boolean;
+  needsApproval: boolean;
+  full: boolean;
 }
 
 function timeOf(at: number | null): string {
@@ -35,110 +32,52 @@ function timeOf(at: number | null): string {
     : `${date.toLocaleDateString([], { day: '2-digit', month: '2-digit' })} ${time}`;
 }
 
-export function ConversationPanel({
-  officeState,
-  terminalAgentIds,
-  approvalAgentIds,
-  onOpenTerminal,
-}: ConversationPanelProps) {
-  const { agentId, messages, truncated, loading, loadedAt } = useConversation();
+export function ConversationView({
+  agentId,
+  inOffice,
+  needsApproval,
+  full,
+}: ConversationViewProps) {
+  const conversation = useConversation();
   const sessions = useSessionsInfo();
   const { result, sentTo } = useReplyState();
-  const session = agentId === null ? undefined : sessions.get(agentId);
+  const session = sessions.get(agentId);
   const lastActivityAt = session?.lastActivityAt ?? null;
   const scroller = useRef<HTMLDivElement>(null);
-  const [full, setFull] = useState(false);
 
   useEffect(() => {
-    if (agentId !== null) refreshConversation();
-  }, [agentId, lastActivityAt]);
+    openConversation(agentId);
+  }, [agentId]);
 
   useEffect(() => {
-    if (!full) return;
-    const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') setFull(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [full]);
+    refreshConversation();
+  }, [lastActivityAt]);
 
   useEffect(() => {
-    if (!result?.ok || sentTo === null || sentTo !== agentId) return;
-    const timer = setTimeout(() => {
-      if (result.agentId !== agentId) openConversation(result.agentId);
-      else refreshConversation();
-    }, REFRESH_AFTER_REPLY_MS);
+    if (!result?.ok || sentTo !== agentId || result.agentId !== agentId) return;
+    const timer = setTimeout(refreshConversation, REFRESH_AFTER_REPLY_MS);
     return () => clearTimeout(timer);
   }, [result, sentTo, agentId]);
 
   useEffect(() => {
     const element = scroller.current;
     if (element) element.scrollTop = element.scrollHeight;
-  }, [loadedAt]);
+  }, [conversation.loadedAt]);
 
-  if (agentId === null) return null;
-  const inOffice = terminalAgentIds.includes(agentId);
-  const needsApproval = approvalAgentIds.includes(agentId);
-  const room = officeState.characters.get(agentId)?.directoryName ?? 'lobby';
-  const idle = idleLabel(lastActivityAt);
-  const title = session?.title ?? `Session ${agentId}`;
-
-  const show = (): void => {
-    setFull(false);
-    officeState.selectedAgentId = agentId;
-    officeState.cameraFollowId = agentId;
-    if (inOffice) onOpenTerminal(agentId);
-  };
-  const frame = full
-    ? 'fixed inset-0 z-[60] rounded-none'
-    : 'absolute top-[72px] left-12 z-[44] w-[640px] max-w-[calc(100%-420px)] max-h-[calc(100vh-150px)]';
+  const mine = conversation.agentId === agentId;
+  const messages = mine ? conversation.messages : [];
+  const loading = !mine || conversation.loading;
   const column = full ? 'w-full max-w-[780px] mx-auto' : '';
 
   return (
-    <div
-      className={`${frame} ui-panel ui-surface flex flex-col`}
-      data-testid="conversation-panel"
-      data-full={full ? 'true' : 'false'}
-    >
-      <div className="flex items-center gap-8 px-16 py-12 border-b border-line">
-        <div className="flex-1 min-w-0">
-          <div className="text-ui-lg font-semibold leading-tight truncate">{title}</div>
-          <div className="text-ui-xs text-ink-muted mt-2">
-            {room}
-            {idle ? ` · ${idle}` : ''}
-            {inOffice ? ' · office terminal' : ''}
-          </div>
-        </div>
-        <TerminalButton
-          agentId={agentId}
-          inOffice={inOffice}
-          session={session}
-          onReveal={show}
-          onLeave={() => setFull(false)}
-        />
-        <IconButton
-          icon={full ? 'close_fullscreen' : 'open_in_full'}
-          label={full ? 'Exit full screen (Esc)' : 'Full screen'}
-          onClick={() => setFull((value) => !value)}
-          data-testid="conversation-full"
-        />
-        <IconButton
-          icon="close"
-          label="Close"
-          onClick={() => {
-            setFull(false);
-            closeConversation();
-          }}
-          data-testid="conversation-close"
-        />
-      </div>
+    <>
       <div
         ref={scroller}
         className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-20 py-16"
         data-testid="conversation-messages"
       >
         <div className={`${column} flex flex-col gap-20`}>
-          {truncated && (
+          {mine && conversation.truncated && (
             <div className="text-ui-xs text-ink-faint text-center">
               Older messages are not shown.
             </div>
@@ -208,6 +147,6 @@ export function ConversationPanel({
           />
         </div>
       </div>
-    </div>
+    </>
   );
 }
