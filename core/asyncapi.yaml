@@ -132,6 +132,7 @@ components:
         - $ref: '#/components/schemas/RoomsState'
         - $ref: '#/components/schemas/ReleaseResult'
         - $ref: '#/components/schemas/TasksState'
+        - $ref: '#/components/schemas/SessionsInfo'
       discriminator: type
 
     ClientMessage:
@@ -450,6 +451,43 @@ components:
         tokens:
           type: integer
           description: Tokens processed by the task's sessions so far (input, cache and output, sub-agents included).
+
+    SessionsInfo:
+      description: What each session is about, read from its transcript, sent when it changes and every few seconds.
+      type: object
+      additionalProperties: false
+      required: [type, sessions]
+      properties:
+        type:
+          const: sessionsInfo
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SessionInfo'
+
+    SessionInfo:
+      description: Title, last activity and last message of one session.
+      type: object
+      additionalProperties: false
+      required: [id, title, lastActivityAt, lastText, prNumbers]
+      properties:
+        id:
+          type: integer
+          description: Agent id of the session.
+        title:
+          type: [string, 'null']
+          description: Title Claude Code gave the session, or the one set with /rename.
+        lastActivityAt:
+          type: [integer, 'null']
+          description: Epoch milliseconds of the last message from the user, the assistant or the system.
+        lastText:
+          type: [string, 'null']
+          description: Start of the last text the assistant wrote.
+        prNumbers:
+          type: array
+          items:
+            type: integer
+          description: Pull requests the session linked, most recent first.
 
     TaskStatus:
       description: Lifecycle of a task.

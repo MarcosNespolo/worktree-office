@@ -29,6 +29,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [x] A task box that starts new tasks in free worktrees, with a limit on how many run at once
 - [x] Tokens used by each task
+- [x] Session titles and idle time on the character labels
 - [x] System notifications when something new needs you
 - [x] Demo mode with a fictional project
 - [ ] GitLab merge requests
@@ -84,6 +85,8 @@ By default, worktree-office watches the git repository it was started in. To wat
 Room names come from the worktree folder without the repository prefix, so `acme-web-fix-login` becomes `fix-login`. The office holds up to 24 rooms. The layout is generated, so edits made in the layout editor are replaced when worktrees change.
 
 Sessions come and go with their conversation. A session joins the office when it exchanges a message, and leaves after 2 hours without one, so sessions left open for days do not crowd the lobby. It comes back as soon as the conversation continues. Change the limit with a top-level `"sessions": { "hideAfterIdleMinutes": 120 }`, or use `0` to keep every session.
+
+A session that is not working shows the title Claude Code gave it, or the one set with `/rename`, and how long it has been idle, for example `checkout-redesign · idle 25m`.
 
 ### Door signs and the "needs you" panel
 

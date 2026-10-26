@@ -50,7 +50,8 @@ export type ServerMessage =
   | AgentDiagnostics
   | RoomsState
   | ReleaseResult
-  | TasksState;
+  | TasksState
+  | SessionsInfo;
 
 export type ClientMessage =
   | WebviewReady
@@ -476,6 +477,19 @@ export interface TaskInfo {
 
 export type TaskStatus =
   'queued' | 'preparing' | 'starting' | 'blocked' | 'running' | 'done' | 'failed';
+
+export interface SessionsInfo {
+  type: 'sessionsInfo';
+  sessions: SessionInfo[];
+}
+
+export interface SessionInfo {
+  id: number;
+  title: string | null;
+  lastActivityAt: number | null;
+  lastText: string | null;
+  prNumbers: number[];
+}
 
 export interface WebviewReady {
   type: 'webviewReady';

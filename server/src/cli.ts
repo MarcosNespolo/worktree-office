@@ -45,6 +45,7 @@ import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
+import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
 import { SessionSweeper } from './rooms/sweeper.js';
 import { TaskRunner } from './rooms/tasks.js';
@@ -443,6 +444,7 @@ async function main(): Promise<void> {
       activity,
       idleMs: roomsConfig.sessions.hideAfterIdleMinutes * 60_000,
     });
+    const sessionInfo = new SessionInfoTracker({ store, activity });
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
     const status = new StatusTracker(
@@ -519,6 +521,7 @@ async function main(): Promise<void> {
       await ptyManager.disposeAll();
       demoDriver?.stop();
       sweeper.stop();
+      sessionInfo.stop();
       tasks.stop();
       status.stop();
       rooms.stop();
