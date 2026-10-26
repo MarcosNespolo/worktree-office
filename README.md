@@ -83,6 +83,8 @@ By default, worktree-office watches the git repository it was started in. To wat
 
 Room names come from the worktree folder without the repository prefix, so `acme-web-fix-login` becomes `fix-login`. The office holds up to 24 rooms. The layout is generated, so edits made in the layout editor are replaced when worktrees change.
 
+Sessions come and go with their conversation. A session joins the office when it exchanges a message, and leaves after 2 hours without one, so sessions left open for days do not crowd the lobby. It comes back as soon as the conversation continues. Change the limit with a top-level `"sessions": { "hideAfterIdleMinutes": 120 }`, or use `0` to keep every session.
+
 ### Door signs and the "needs you" panel
 
 Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
