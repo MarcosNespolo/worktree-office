@@ -90,7 +90,9 @@ A session that is not working shows the title Claude Code gave it, or the one se
 
 ### Door signs and the "needs you" panel
 
-Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one.
+
+The sign also says what the room is doing, judged from the tool calls of its most recent session: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading, **working** otherwise. A session waiting on you shows **needs you**, an idle one shows how long it has been idle, and a merged pull request with nobody around shows **done**. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the sign does not flicker. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
 
 The "Needs you" panel lists what is waiting on you:
 
@@ -119,6 +121,7 @@ These project fields tune the signs and the panel:
 | `devServer` | Dev server of each room, for example `{ "portBase": 3000, "portStep": 100, "ports": { "main-app": 3001 }, "url": "http://localhost:{port}" }`. The port comes from the first number in the room name or from `ports`.                                      |
 | `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value. Only open and draft pull requests have fields. |
 | `needsYou`  | Rules that turn a field into a panel item, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA" }`.                                                                                                                             |
+| `stages`    | Patterns that decide **testing** and **reviewing**, for example `{ "testing": "pytest                                                                                                                                                                      | tox", "reviewing": "review | audit" }`. `testing`is matched against shell commands,`reviewing` against sub-agent descriptions and prompts; each replaces the default pattern. |
 
 ### Releasing a worktree
 
