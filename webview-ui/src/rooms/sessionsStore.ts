@@ -29,6 +29,16 @@ export function getSessionInfo(id: number): SessionInfo | undefined {
   return current.get(id);
 }
 
+export const ACTIVE_STALE_MS = 10 * 60_000;
+
+export function stillWorking(
+  isActive: boolean | undefined,
+  lastActivityAt: number | null,
+  now = Date.now(),
+): boolean {
+  return isActive === true && lastActivityAt !== null && now - lastActivityAt < ACTIVE_STALE_MS;
+}
+
 export function idleLabel(lastActivityAt: number | null, now = Date.now()): string | null {
   if (lastActivityAt === null) return null;
   const minutes = Math.floor((now - lastActivityAt) / 60_000);

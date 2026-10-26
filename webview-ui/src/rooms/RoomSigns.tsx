@@ -69,6 +69,11 @@ export function RoomSigns({
       (need) => need.id,
     ),
   );
+  const busyIds = new Set(
+    Object.entries(agentTools)
+      .filter(([, tools]) => tools.some((tool) => !tool.done))
+      .map(([id]) => Number(id)),
+  );
   const [, setTick] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -101,7 +106,7 @@ export function RoomSigns({
         const width = project.toScreenX((box.maxCol + 1) * TILE_SIZE) - left;
         const top = project.toScreenY(box.minRow * TILE_SIZE) + SIGN_TOP_OFFSET_PX;
         const checks = room.pr?.checks ? CHECKS[room.pr.checks] : null;
-        const stage = roomStage(room, { sessions, officeState, needIds });
+        const stage = roomStage(room, { sessions, officeState, needIds, busyIds });
         const fieldValues = Object.values(room.fields);
         return (
           <div

@@ -92,7 +92,7 @@ A session that is not working shows the title Claude Code gave it, or the one se
 
 Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one.
 
-The sign also says what the room is doing, judged from the tool calls of its most recent session: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading, **working** otherwise. A session waiting on you shows **needs you**, an idle one shows how long it has been idle, and a merged pull request with nobody around shows **done**. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the sign does not flicker. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+The sign also says what the room is doing, judged from the tool calls of its most recent session: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading, **working** otherwise. A session waiting on you shows **needs you**, one with no message for ten minutes shows how long it has been idle, and a merged pull request with nobody around shows **done**. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the sign does not flicker. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
 
 The "Needs you" panel lists what is waiting on you:
 

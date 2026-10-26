@@ -1,6 +1,6 @@
 import type { RoomInfo, SessionInfo } from '../../../core/src/messages.js';
 import type { OfficeState } from '../office/engine/officeState.js';
-import { idleLabel } from './sessionsStore.js';
+import { idleLabel, stillWorking } from './sessionsStore.js';
 
 export interface RoomStage {
   text: string;
@@ -11,6 +11,7 @@ export interface RoomStageContext {
   sessions: ReadonlyMap<number, SessionInfo>;
   officeState: OfficeState;
   needIds: ReadonlySet<number>;
+  busyIds: ReadonlySet<number>;
 }
 
 const STAGE_TONE: Record<string, string> = {
@@ -41,7 +42,8 @@ export function roomStage(room: RoomInfo, context: RoomStageContext): RoomStage 
     (session.lastActivityAt ?? 0) > (best.lastActivityAt ?? 0) ? session : best,
   );
   if (context.needIds.has(latest.id)) return { text: 'needs you', tone: 'text-status-permission' };
-  if (context.officeState.characters.get(latest.id)?.isActive) {
+  const isActive = context.officeState.characters.get(latest.id)?.isActive;
+  if (context.busyIds.has(latest.id) || stillWorking(isActive, latest.lastActivityAt)) {
     const stage = latest.stage ?? 'working';
     return { text: stage, tone: STAGE_TONE[stage] ?? 'text-status-active' };
   }
