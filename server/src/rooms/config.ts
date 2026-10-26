@@ -111,6 +111,8 @@ function parseCreateWorktree(raw: unknown): CreateWorktreeConfig | null {
 }
 
 export function roomsConfigPath(): string {
+  const override = process.env.WORKTREE_OFFICE_PROJECTS;
+  if (override && override.trim()) return resolveUserPath(override.trim());
   return path.join(os.homedir(), SERVER_JSON_DIR, ROOMS_CONFIG_FILE_NAME);
 }
 
