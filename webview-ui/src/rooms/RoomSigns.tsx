@@ -4,9 +4,13 @@ import type { RoomInfo } from '../../../core/src/messages.js';
 import { TILE_SIZE } from '../constants.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { overlayProjection } from '../office/projection.js';
+import type { ToolActivity } from '../office/types.js';
+import { collectAgentNeeds } from './agentNeeds.js';
 import { requestRelease, useReleaseState } from './releaseStore.js';
 import { areaBounds } from './roomGeometry.js';
 import { useRoomsState } from './roomsStore.js';
+import { roomStage } from './roomStage.js';
+import { useSessionsInfo } from './sessionsStore.js';
 
 const SIGN_Z_INDEX = 5;
 const SIGN_TOP_OFFSET_PX = 4;
@@ -16,6 +20,10 @@ interface RoomSignsProps {
   containerRef: React.RefObject<HTMLDivElement | null>;
   zoom: number;
   panRef: React.RefObject<{ x: number; y: number }>;
+  agents: number[];
+  agentStatuses: Record<number, string>;
+  agentAwaitingInput: Record<number, boolean>;
+  agentTools: Record<number, ToolActivity[]>;
 }
 
 function pullRequestText(room: RoomInfo): string {
@@ -43,9 +51,24 @@ const CHECKS: Record<string, { text: string; tone: string }> = {
   pending: { text: 'checks running', tone: 'text-status-permission' },
 };
 
-export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSignsProps) {
+export function RoomSigns({
+  officeState,
+  containerRef,
+  zoom,
+  panRef,
+  agents,
+  agentStatuses,
+  agentAwaitingInput,
+  agentTools,
+}: RoomSignsProps) {
   const { rooms } = useRoomsState();
   const { busy } = useReleaseState();
+  const sessions = useSessionsInfo();
+  const needIds = new Set(
+    collectAgentNeeds(officeState, agents, agentStatuses, agentAwaitingInput, agentTools).map(
+      (need) => need.id,
+    ),
+  );
   const [, setTick] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -78,6 +101,7 @@ export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSigns
         const width = project.toScreenX((box.maxCol + 1) * TILE_SIZE) - left;
         const top = project.toScreenY(box.minRow * TILE_SIZE) + SIGN_TOP_OFFSET_PX;
         const checks = room.pr?.checks ? CHECKS[room.pr.checks] : null;
+        const stage = roomStage(room, { sessions, officeState, needIds });
         const fieldValues = Object.values(room.fields);
         return (
           <div
@@ -88,6 +112,11 @@ export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSigns
           >
             <div className="pixel-panel px-8 pt-2 pb-4 flex flex-col gap-2 max-w-full overflow-hidden">
               <div className="flex items-center gap-8 whitespace-nowrap text-2xs leading-none">
+                {stage && (
+                  <span className={`font-bold ${stage.tone}`} data-testid="room-stage">
+                    {stage.text}
+                  </span>
+                )}
                 {room.pr ? (
                   <a
                     href={room.pr.url}

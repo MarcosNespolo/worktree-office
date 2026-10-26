@@ -605,6 +605,10 @@ function App() {
             containerRef={containerRef}
             zoom={editor.zoom}
             panRef={editor.panRef}
+            agents={agents}
+            agentStatuses={agentStatuses}
+            agentAwaitingInput={agentAwaitingInput}
+            agentTools={agentTools}
           />
         </>
       ) : (

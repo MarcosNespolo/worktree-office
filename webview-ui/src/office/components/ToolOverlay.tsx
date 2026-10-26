@@ -278,7 +278,11 @@ export function ToolOverlay({
         }
 
         const idleText =
-          session && !isActive && !hasActiveTools ? idleLabel(session.lastActivityAt) : null;
+          session && !isActive && !hasActiveTools
+            ? idleLabel(session.lastActivityAt)
+            : session?.stage && isActive
+              ? session.stage
+              : null;
 
         // Team info
         const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
