@@ -1,7 +1,7 @@
 import type { SessionInfo } from '../../../core/src/messages.js';
-import { Button } from '../components/ui/Button.js';
 import { terminalHint } from './replyHint.js';
 import { openSessionTerminal, useReplyState } from './replyStore.js';
+import { UiButton } from './ui.js';
 
 interface TerminalButtonProps {
   agentId: number;
@@ -25,14 +25,17 @@ export function TerminalButton({
     else openSessionTerminal(agentId);
   };
   return (
-    <Button
+    <UiButton
       size="sm"
       onClick={open}
       disabled={!inOffice && sending !== null}
       title={inOffice ? 'Open the terminal of this session' : terminalHint(session)}
       data-testid="open-terminal"
     >
+      <span className="material-symbols-sharp text-[16px]" aria-hidden="true">
+        terminal
+      </span>
       Terminal
-    </Button>
+    </UiButton>
   );
 }

@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 
+import { IconButton } from './ui.js';
 import type { AttachmentsApi } from './useAttachments.js';
 
 export function AttachButton({
@@ -12,15 +13,13 @@ export function AttachButton({
   const input = useRef<HTMLInputElement>(null);
   return (
     <>
-      <button
-        type="button"
+      <IconButton
+        icon="add_photo_alternate"
+        label="Attach images. You can also paste or drop them."
         onClick={() => input.current?.click()}
-        title="Attach images. You can also paste or drop them."
-        className={`bg-transparent border-0 p-0 text-2xs text-accent-bright hover:text-accent cursor-pointer ${className}`}
+        className={className}
         data-testid="attach-button"
-      >
-        attach
-      </button>
+      />
       <input
         ref={input}
         type="file"
@@ -40,11 +39,11 @@ export function AttachButton({
 export function AttachmentList({ attachments }: { attachments: AttachmentsApi }) {
   if (attachments.items.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-6 px-8 py-4" data-testid="attachments">
+    <div className="flex flex-wrap gap-8 pb-8" data-testid="attachments">
       {attachments.items.map((item) => (
         <div
           key={item.id}
-          className={`relative w-[48px] h-[48px] border-2 ${item.error ? 'border-danger' : 'border-border'}`}
+          className={`relative w-[56px] h-[56px] rounded-[8px] border ${item.error ? 'border-state-failed' : 'border-line'}`}
           title={item.error ?? (item.path ? item.name : `Uploading ${item.name}...`)}
           data-testid="attachment"
           data-state={item.error ? 'error' : item.path ? 'ready' : 'uploading'}
@@ -52,13 +51,14 @@ export function AttachmentList({ attachments }: { attachments: AttachmentsApi })
           <img
             src={item.previewUrl}
             alt={item.name}
-            className={`w-full h-full object-cover ${item.path ? '' : 'opacity-50'}`}
+            className={`w-full h-full object-cover rounded-[7px] ${item.path ? '' : 'opacity-50'}`}
           />
           <button
             type="button"
             onClick={() => attachments.remove(item.id)}
             title="Remove"
-            className="absolute -top-6 -right-6 w-16 h-16 leading-none text-2xs bg-bg-dark text-text border-2 border-border cursor-pointer"
+            aria-label="Remove"
+            className="absolute -top-6 -right-6 w-[18px] h-[18px] rounded-full flex items-center justify-center text-[12px] leading-none bg-surface-raised text-ink border border-line-strong cursor-pointer"
           >
             ×
           </button>

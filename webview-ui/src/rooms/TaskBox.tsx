@@ -1,9 +1,9 @@
 import { useState } from 'react';
 
 import type { TaskStatus } from '../../../core/src/messages.js';
-import { Button } from '../components/ui/Button.js';
 import { AttachButton, AttachmentList } from './Attachments.js';
 import { cancelTask, startTasks, useTasksState } from './tasksStore.js';
+import { UiButton } from './ui.js';
 import { useAttachments } from './useAttachments.js';
 
 const STATUS_TEXT: Record<TaskStatus, string> = {
@@ -17,13 +17,13 @@ const STATUS_TEXT: Record<TaskStatus, string> = {
 };
 
 const STATUS_TONE: Record<TaskStatus, string> = {
-  queued: 'text-text-muted',
-  preparing: 'text-status-active',
-  starting: 'text-status-active',
-  blocked: 'text-status-permission',
-  running: 'text-status-success',
-  done: 'text-text-muted',
-  failed: 'text-danger',
+  queued: 'text-ink-muted',
+  preparing: 'text-state-working',
+  starting: 'text-state-working',
+  blocked: 'text-state-attention',
+  running: 'text-state-ready',
+  done: 'text-ink-muted',
+  failed: 'text-state-failed',
 };
 
 function formatTokens(tokens: number): string {
@@ -59,7 +59,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
 
   return (
     <div
-      className="absolute top-8 left-1/2 -translate-x-1/2 z-[44] w-[520px] max-w-[calc(100%-120px)] pixel-panel flex flex-col"
+      className="absolute top-8 left-1/2 -translate-x-1/2 z-[44] w-[520px] max-w-[calc(100%-120px)] ui-panel ui-surface flex flex-col"
       data-testid="task-box"
     >
       <textarea
@@ -78,43 +78,43 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
         onDrop={attachments.onDrop}
         onDragOver={attachments.onDragOver}
         placeholder="Describe one or more tasks. Separate them with a blank line."
-        className="bg-bg-dark text-text text-sm px-8 py-6 border-0 resize-none outline-none font-[inherit]"
+        className="ui-input text-ink text-ui-base px-8 py-6 border-0 resize-none outline-none font-[inherit]"
         data-testid="task-input"
       />
       <AttachmentList attachments={attachments} />
       <div
-        className="px-8 py-2 text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap"
+        className="px-8 py-2 text-ui-xs text-ink-muted overflow-hidden text-ellipsis whitespace-nowrap"
         title={capacity}
         data-testid="task-capacity"
       >
         {capacity}
       </div>
       {open && (
-        <div className="flex items-center justify-between gap-8 px-8 py-4 border-t-2 border-border">
-          <span className="text-2xs text-text-muted">Ctrl+Enter starts.</span>
+        <div className="flex items-center justify-between gap-8 px-8 py-4 border-t border-line">
+          <span className="text-ui-xs text-ink-muted">Ctrl+Enter starts.</span>
           <div className="flex items-center gap-8">
             <AttachButton attachments={attachments} />
-            <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>
+            <UiButton size="sm" variant="ghost" onClick={() => setOpen(false)}>
               Close
-            </Button>
-            <Button
+            </UiButton>
+            <UiButton
               size="sm"
-              variant="accent"
+              variant="primary"
               disabled={!text.trim() || splitting || attachments.uploading}
               onClick={submit}
               data-testid="task-start"
             >
               Start
-            </Button>
+            </UiButton>
           </div>
         </div>
       )}
       {tasks.length > 0 && (
-        <div className="max-h-[180px] overflow-y-auto pixel-scrollbar border-t-2 border-border">
+        <div className="max-h-[180px] overflow-y-auto pixel-scrollbar border-t border-line">
           {tasks.map((task) => (
             <div
               key={task.id}
-              className="flex items-center gap-8 px-8 py-4 border-b border-border text-2xs"
+              className="flex items-center gap-8 px-8 py-4 border-b border-line text-ui-xs"
               data-testid="task-row"
             >
               <span className={`shrink-0 ${STATUS_TONE[task.status]}`}>
@@ -128,7 +128,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
               </span>
               {task.tokens > 0 && (
                 <span
-                  className="shrink-0 text-text-muted"
+                  className="shrink-0 text-ink-muted"
                   title="Tokens processed by this task's sessions (input, cache and output)"
                   data-testid="task-tokens"
                 >
@@ -136,7 +136,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
                 </span>
               )}
               <span
-                className="shrink-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-text-muted"
+                className="shrink-0 max-w-[200px] overflow-hidden text-ellipsis whitespace-nowrap text-ink-muted"
                 title={task.detail}
               >
                 {task.room ?? task.detail}
@@ -146,7 +146,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
                   type="button"
                   onClick={() => task.agentId !== null && onOpenTerminal(task.agentId)}
                   title="Open the terminal of this task"
-                  className="shrink-0 bg-transparent border-0 p-0 text-2xs text-accent-bright hover:text-accent cursor-pointer"
+                  className="shrink-0 bg-transparent border-0 p-0 text-ui-xs text-accent-bright hover:text-accent cursor-pointer"
                   data-testid="task-terminal"
                 >
                   terminal
@@ -156,7 +156,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
                 <button
                   type="button"
                   onClick={() => cancelTask(task.id)}
-                  className="shrink-0 bg-transparent border-0 p-0 text-2xs text-accent-bright hover:text-accent cursor-pointer"
+                  className="shrink-0 bg-transparent border-0 p-0 text-ui-xs text-accent-bright hover:text-accent cursor-pointer"
                 >
                   {task.status === 'queued' ? 'cancel' : 'clear'}
                 </button>
