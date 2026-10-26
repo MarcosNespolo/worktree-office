@@ -4,12 +4,11 @@ import type { RoomInfo, RoomNeed, SessionInfo } from '../../../core/src/messages
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
 import { collectAgentNeeds } from './agentNeeds.js';
-import { ConversationPanel } from './ConversationPanel.js';
-import { openConversation } from './conversationStore.js';
 import { requestRelease } from './releaseStore.js';
 import { ReplyBox } from './ReplyBox.js';
 import { replyHint } from './replyHint.js';
 import { useRoomsState } from './roomsStore.js';
+import { selectSession } from './selectionStore.js';
 import { useSessionsInfo } from './sessionsStore.js';
 import { useTasksState } from './tasksStore.js';
 import { TerminalButton } from './TerminalButton.js';
@@ -46,7 +45,6 @@ interface NeedsYouPanelProps {
   agentAwaitingInput: Record<number, boolean>;
   agentTools: Record<number, ToolActivity[]>;
   terminalAgentIds: number[];
-  onOpenTerminal: (agentId: number) => void;
 }
 
 function ExternalLink({ href, children }: { href: string; children: string }) {
@@ -120,7 +118,7 @@ function SessionLine({ room, session }: { room: string; session: SessionInfo | n
       {session && (
         <button
           type="button"
-          onClick={() => openConversation(session.id)}
+          onClick={() => selectSession(session.id, 'conversation')}
           className="shrink-0 bg-transparent border-0 p-0 text-ui-xs text-accent-bright hover:text-accent cursor-pointer"
           data-testid="needs-you-read"
         >
@@ -136,7 +134,7 @@ function LastMessage({ session }: { session: SessionInfo | null | undefined }) {
   return (
     <button
       type="button"
-      onClick={() => openConversation(session.id)}
+      onClick={() => selectSession(session.id, 'conversation')}
       title="Read the whole conversation"
       className="block w-full text-left bg-transparent border-0 p-0 text-ui-xs text-ink-muted hover:text-ink leading-tight mt-2 line-clamp-4 cursor-pointer font-[inherit]"
       data-testid="needs-you-message"
@@ -150,12 +148,10 @@ function NeedRow({
   need,
   session,
   inOffice,
-  onShow,
 }: {
   need: RoomNeed;
   session: SessionInfo | null;
   inOffice: (agentId: number) => boolean;
-  onShow: (id: number) => void;
 }) {
   return (
     <div
@@ -171,12 +167,7 @@ function NeedRow({
         )}
       </div>
       {session && (
-        <TerminalButton
-          agentId={session.id}
-          inOffice={inOffice(session.id)}
-          session={session}
-          onReveal={onShow}
-        />
+        <TerminalButton agentId={session.id} inOffice={inOffice(session.id)} session={session} />
       )}
       {need.url && <ExternalLink href={need.url}>Open</ExternalLink>}
       {need.prUrl && need.prUrl !== need.url && <ExternalLink href={need.prUrl}>PR</ExternalLink>}
@@ -196,7 +187,6 @@ export function NeedsYouPanel({
   agentAwaitingInput,
   agentTools,
   terminalAgentIds,
-  onOpenTerminal,
 }: NeedsYouPanelProps) {
   const { needs, github, rooms } = useRoomsState();
   const { tasks } = useTasksState();
@@ -235,17 +225,11 @@ export function NeedsYouPanel({
   const focus = (id: number): void => {
     officeState.selectedAgentId = id;
     officeState.cameraFollowId = id;
-    if (inOffice(id)) onOpenTerminal(id);
+    selectSession(id);
   };
 
   return (
     <>
-      <ConversationPanel
-        officeState={officeState}
-        terminalAgentIds={terminalAgentIds}
-        approvalAgentIds={agentNeeds.filter((need) => need.kind === 'approval').map((n) => n.id)}
-        onOpenTerminal={onOpenTerminal}
-      />
       <div
         className="absolute top-8 right-8 z-[44] w-[380px] ui-panel ui-surface flex flex-col"
         data-testid="needs-you-panel"
@@ -312,7 +296,6 @@ export function NeedsYouPanel({
                     agentId={need.id}
                     inOffice={inOffice(need.id)}
                     session={sessions.get(need.id)}
-                    onReveal={focus}
                   />
                 ) : (
                   <UiButton size="sm" onClick={() => focus(need.id)}>
@@ -341,7 +324,6 @@ export function NeedsYouPanel({
                     agentId={task.agentId}
                     inOffice={inOffice(task.agentId)}
                     session={sessions.get(task.agentId)}
-                    onReveal={focus}
                   />
                 )}
               </div>
@@ -352,7 +334,6 @@ export function NeedsYouPanel({
                 need={need}
                 session={sessionForNeed(need, rooms, sessions, officeState)}
                 inOffice={inOffice}
-                onShow={focus}
               />
             ))}
           </div>

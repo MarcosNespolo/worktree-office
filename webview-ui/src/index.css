@@ -59,6 +59,7 @@
   --color-ink: #e9eaf2;
   --color-ink-muted: #a6a9bd;
   --color-ink-faint: #7a7d96;
+  --color-link: #8db7ff;
 
   /* One color per task state, used on panels, signs and rooms */
   --color-state-attention: #f2b33d;
@@ -130,6 +131,7 @@
   --color-ink: var(--color-ink);
   --color-ink-muted: var(--color-ink-muted);
   --color-ink-faint: var(--color-ink-faint);
+  --color-link: var(--color-link);
   --color-state-attention: var(--color-state-attention);
   --color-state-working: var(--color-state-working);
   --color-state-ready: var(--color-state-ready);
@@ -328,7 +330,7 @@
     color: var(--color-ink-muted);
   }
   .md a {
-    color: #8db7ff;
+    color: var(--color-link);
     text-decoration: underline;
     text-underline-offset: 2px;
   }

@@ -335,7 +335,7 @@ export const WS_RECONNECT_DELAYS_MS = [250, 500, 1_000, 2_000, 4_000] as const;
 // The panel docks on the right as a full-height column, in flow beside the
 // office region (which flexes to fill the rest) — not overlaid on top of it.
 /** Open width the panel starts at, in px; the user can drag to resize. */
-export const TERMINAL_DRAWER_DEFAULT_WIDTH_PX = 520;
+export const TERMINAL_DRAWER_DEFAULT_WIDTH_PX = 760;
 /** Clamp for the drag: never narrower than this. */
 export const TERMINAL_DRAWER_MIN_WIDTH_PX = 320;
 /** Clamp for the drag: never wider than this fraction of the window. */

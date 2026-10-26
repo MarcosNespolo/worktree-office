@@ -2,6 +2,7 @@ import { useState } from 'react';
 
 import type { TaskStatus } from '../../../core/src/messages.js';
 import { AttachButton, AttachmentList } from './Attachments.js';
+import { selectSession } from './selectionStore.js';
 import { cancelTask, startTasks, useTasksState } from './tasksStore.js';
 import { UiButton } from './ui.js';
 import { useAttachments } from './useAttachments.js';
@@ -34,10 +35,9 @@ function formatTokens(tokens: number): string {
 
 interface TaskBoxProps {
   terminalAgentIds: number[];
-  onOpenTerminal: (agentId: number) => void;
 }
 
-export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
+export function TaskBox({ terminalAgentIds }: TaskBoxProps) {
   const { tasks, maxActive, active, splitting, freeRooms } = useTasksState();
   const attachments = useAttachments();
   const capacity = splitting
@@ -144,7 +144,7 @@ export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
               {task.agentId !== null && terminalAgentIds.includes(task.agentId) && (
                 <button
                   type="button"
-                  onClick={() => task.agentId !== null && onOpenTerminal(task.agentId)}
+                  onClick={() => task.agentId !== null && selectSession(task.agentId, 'terminal')}
                   title="Open the terminal of this task"
                   className="shrink-0 bg-transparent border-0 p-0 text-ui-xs text-accent-bright hover:text-accent cursor-pointer"
                   data-testid="task-terminal"

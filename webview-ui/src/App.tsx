@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 
 import { toMajorMinor } from './changelogData.js';
-import { AgentCardBar } from './components/AgentCardBar.js';
 import { BottomToolbar } from './components/BottomToolbar.js';
 import { ChangelogModal } from './components/ChangelogModal.js';
 import { ConnectionIndicator } from './components/ConnectionIndicator.js';
@@ -11,7 +10,6 @@ import { EditActionBar } from './components/EditActionBar.js';
 import { IntroBubble } from './components/IntroBubble.js';
 import { MigrationNotice } from './components/MigrationNotice.js';
 import { SettingsModal } from './components/SettingsModal.js';
-import { TerminalDrawer } from './components/TerminalDrawer.js';
 import { Tooltip } from './components/Tooltip.js';
 import { Button } from './components/ui/Button.js';
 import { Modal } from './components/ui/Modal.js';
@@ -44,7 +42,9 @@ import { NeedsYouPanel } from './rooms/NeedsYouPanel.js';
 import { ReleaseDialog, ReleaseNotice } from './rooms/ReleaseDialog.js';
 import { ReplyNotice } from './rooms/ReplyNotice.js';
 import { RoomSigns } from './rooms/RoomSigns.js';
+import { selectSession } from './rooms/selectionStore.js';
 import { TaskBox } from './rooms/TaskBox.js';
+import { TaskPanel } from './rooms/TaskPanel.js';
 import { isBrowserRuntime, isE2E } from './runtime.js';
 import { installTestHooks } from './testHooks.js';
 import { transport } from './transport/index.js';
@@ -353,22 +353,17 @@ function App() {
       const leadId = os.characters.get(focusId)?.leadAgentId;
       const terminalId =
         leadId !== undefined && !terminalAgentIds.includes(focusId) ? leadId : focusId;
-      if (terminalAgentIds.includes(terminalId)) {
-        revealTerminal(terminalId);
-        if (isMobile) showMobileTerminal();
+      if (isMobile) {
+        if (terminalAgentIds.includes(terminalId)) {
+          revealTerminal(terminalId);
+          showMobileTerminal();
+        }
+        return;
       }
+      selectSession(terminalAgentIds.includes(terminalId) ? terminalId : focusId);
     },
     [terminalAgentIds, isMobile, revealTerminal, showMobileTerminal],
   );
-
-  // Card click when there is no terminal pane to switch (VS Code, or a
-  // watch-only standalone session): ask the host to raise the agent's own
-  // terminal — VS Code shows the editor terminal, standalone has nothing to
-  // show — and select its character so the office follows the click.
-  const handleCardSelect = useCallback((agentId: number) => {
-    transport.send({ type: 'focusAgent', id: agentId });
-    getOfficeState().selectAndFollow(agentId);
-  }, []);
 
   const officeState = getOfficeState();
 
@@ -510,12 +505,9 @@ function App() {
               agentAwaitingInput={agentAwaitingInput}
               agentTools={agentTools}
               terminalAgentIds={terminalAgentIds}
-              onOpenTerminal={terminalDrawer.reveal}
             />
           )}
-          {!isMobile && (
-            <TaskBox terminalAgentIds={terminalAgentIds} onOpenTerminal={terminalDrawer.select} />
-          )}
+          {!isMobile && <TaskBox terminalAgentIds={terminalAgentIds} />}
 
           {/* Vignette overlay */}
           <div
@@ -764,31 +756,20 @@ function App() {
               bar stands alone with every agent in the office, external sessions
               included — the at-a-glance "who needs attention" strip, with a
               click raising the agent's editor terminal where there is one. */}
-          {terminalAvailable ? (
-            <TerminalDrawer
-              agentIds={terminalAgentIds}
-              shownAgentId={terminalDrawer.shownAgentId}
-              onSelectAgent={terminalDrawer.select}
-              onCloseAgent={handleCloseAgent}
-              isOpen={terminalDrawer.isOpen}
-              onClosePanel={terminalDrawer.close}
+          {!isDebugMode && (
+            <TaskPanel
+              officeState={officeState}
+              agents={agents}
+              agentStatuses={agentStatuses}
+              agentAwaitingInput={agentAwaitingInput}
+              agentTools={agentTools}
+              terminalAgentIds={terminalAgentIds}
+              terminalsAvailable={terminalAvailable}
               widthPx={terminalDrawer.widthPx}
               onResizeStart={terminalDrawer.onResizeStart}
-              getAppearance={terminalDrawer.getAppearance}
-              statusFor={terminalDrawer.statusFor}
-              onStatusChange={terminalDrawer.onStatusChange}
+              onTerminalStatus={terminalDrawer.onStatusChange}
+              lastOpenedTerminal={terminalDrawer.lastOpened}
             />
-          ) : (
-            !isDebugMode && (
-              <AgentCardBar
-                agentIds={agents}
-                focusedAgentId={focusedAgentId}
-                getAppearance={terminalDrawer.getAppearance}
-                statusFor={terminalDrawer.statusFor}
-                onSelect={handleCardSelect}
-                onClose={handleCloseAgent}
-              />
-            )
           )}
         </>
       )}
