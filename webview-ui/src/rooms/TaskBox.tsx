@@ -32,7 +32,12 @@ function formatTokens(tokens: number): string {
   return `${(tokens / 1_000_000).toFixed(1)}M tok`;
 }
 
-export function TaskBox() {
+interface TaskBoxProps {
+  terminalAgentIds: number[];
+  onOpenTerminal: (agentId: number) => void;
+}
+
+export function TaskBox({ terminalAgentIds, onOpenTerminal }: TaskBoxProps) {
   const { tasks, maxActive, active, splitting, freeRooms } = useTasksState();
   const attachments = useAttachments();
   const capacity = splitting
@@ -136,6 +141,17 @@ export function TaskBox() {
               >
                 {task.room ?? task.detail}
               </span>
+              {task.agentId !== null && terminalAgentIds.includes(task.agentId) && (
+                <button
+                  type="button"
+                  onClick={() => task.agentId !== null && onOpenTerminal(task.agentId)}
+                  title="Open the terminal of this task"
+                  className="shrink-0 bg-transparent border-0 p-0 text-2xs text-accent-bright hover:text-accent cursor-pointer"
+                  data-testid="task-terminal"
+                >
+                  terminal
+                </button>
+              )}
               {(task.status === 'queued' || task.status === 'done' || task.status === 'failed') && (
                 <button
                   type="button"

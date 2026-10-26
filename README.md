@@ -101,9 +101,9 @@ The "Needs you" panel lists what is waiting on you:
 - worktrees whose pull request was merged or closed, ready to be released;
 - dev servers still running in a worktree that is free.
 
-Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room. **Show** selects it in the office.
+Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room.
 
-Click the message excerpt, or **conversation**, to read the whole exchange: the recent messages of the session, formatted, with a reply box under them. Long lines in code blocks wrap, and numbered lists keep their numbers, so you can answer by number. **Full screen** spreads the conversation over the whole office, and Esc brings the window back. When a session running in an office terminal asks for permission, the conversation shows **Approve** and **Deny**. **Show** selects the session in the office, and opens its terminal when the office started it.
+Click the message excerpt, or **conversation**, to read the whole exchange: the recent messages of the session, formatted, with a reply box under them. Long lines in code blocks wrap, and numbered lists keep their numbers, so you can answer by number. **Full screen** spreads the conversation over the whole office, and Esc brings the window back. When a session running in an office terminal asks for permission, the conversation shows **Approve** and **Deny**. **Terminal** opens the terminal of the session. A session running elsewhere, for example in VS Code, is first continued in an office terminal with `claude --resume`, just as a reply would be, so use it only there from then on. Each running task has a **terminal** link in the task box too.
 
 Those items, and sessions waiting for your input, have a reply box, so you can answer without leaving the office:
 

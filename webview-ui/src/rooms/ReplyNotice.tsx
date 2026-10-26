@@ -5,7 +5,7 @@ import { dismissReplyResult, useReplyState } from './replyStore.js';
 const NOTICE_MS = 8_000;
 
 export function ReplyNotice() {
-  const { sending, result } = useReplyState();
+  const { sending, result, kind } = useReplyState();
   useEffect(() => {
     if (!result) return;
     const timer = setTimeout(dismissReplyResult, NOTICE_MS);
@@ -18,7 +18,11 @@ export function ReplyNotice() {
       data-testid="reply-notice"
     >
       {sending !== null && !result ? (
-        <span className="text-text-muted">Sending your reply...</span>
+        <span className="text-text-muted">
+          {kind === 'terminal'
+            ? 'Opening the session in an office terminal...'
+            : 'Sending your reply...'}
+        </span>
       ) : (
         <span className={result?.ok ? 'text-status-success' : 'text-danger'}>
           {result?.message}

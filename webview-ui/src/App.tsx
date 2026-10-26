@@ -513,7 +513,9 @@ function App() {
               onOpenTerminal={terminalDrawer.reveal}
             />
           )}
-          {!isMobile && <TaskBox />}
+          {!isMobile && (
+            <TaskBox terminalAgentIds={terminalAgentIds} onOpenTerminal={terminalDrawer.select} />
+          )}
 
           {/* Vignette overlay */}
           <div
