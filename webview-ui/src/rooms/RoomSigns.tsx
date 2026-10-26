@@ -123,21 +123,23 @@ export function RoomSigns({ officeState, containerRef, zoom, panRef }: RoomSigns
                     </span>
                   ))}
               </div>
-              <div className="flex items-center gap-8 text-2xs leading-none">
-                <span className="flex-1 min-w-0 text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
-                  {room.branch ?? 'detached'}
-                </span>
-                <button
-                  type="button"
-                  disabled={busy !== null}
-                  onClick={() => requestRelease(room.label)}
-                  title={`Release ${room.label}`}
-                  className="pointer-events-auto shrink-0 bg-transparent border-0 p-0 text-2xs leading-none text-accent-bright hover:text-accent cursor-pointer disabled:opacity-(--btn-disabled-opacity) disabled:cursor-default"
-                  data-testid="room-release"
-                >
-                  {busy === room.label ? 'releasing' : 'release'}
-                </button>
-              </div>
+              {(room.branch !== null || room.serverUp) && (
+                <div className="flex items-center gap-8 text-2xs leading-none">
+                  <span className="flex-1 min-w-0 text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
+                    {room.branch ?? 'dev server running'}
+                  </span>
+                  <button
+                    type="button"
+                    disabled={busy !== null}
+                    onClick={() => requestRelease(room.label)}
+                    title={`Release ${room.label}`}
+                    className="pointer-events-auto shrink-0 bg-transparent border-0 p-0 text-2xs leading-none text-accent-bright hover:text-accent cursor-pointer disabled:opacity-(--btn-disabled-opacity) disabled:cursor-default"
+                    data-testid="room-release"
+                  >
+                    {busy === room.label ? 'releasing' : 'release'}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         );

@@ -90,7 +90,7 @@ A session that is not working shows the title Claude Code gave it, or the one se
 
 ### Door signs and the "needs you" panel
 
-Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
 
 The "Needs you" panel lists what is waiting on you:
 
@@ -120,7 +120,7 @@ These project fields tune the signs and the panel:
 
 ### Releasing a worktree
 
-Every door sign has a **release** button, and panel items for merged pull requests or forgotten dev servers have one too. One click:
+Every door sign with a branch checked out or a dev server running has a **release** button, and panel items for merged pull requests or forgotten dev servers have one too. One click:
 
 1. asks first when the pull request is still open, when sessions started from the office are working there, or when files changed;
 2. runs the cleanup commands of the project;
