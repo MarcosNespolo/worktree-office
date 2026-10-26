@@ -33,10 +33,17 @@ function formatTokens(tokens: number): string {
 }
 
 export function TaskBox() {
-  const { tasks, maxActive, active, splitting } = useTasksState();
+  const { tasks, maxActive, active, splitting, freeRooms } = useTasksState();
+  const attachments = useAttachments();
+  const capacity = splitting
+    ? 'Reading your tasks...'
+    : attachments.uploading
+      ? 'Uploading images...'
+      : `${active} of ${maxActive} running · ${
+          freeRooms.length > 0 ? `free: ${freeRooms.join(', ')}` : 'no free worktree'
+        }`;
   const [text, setText] = useState('');
   const [open, setOpen] = useState(false);
-  const attachments = useAttachments();
 
   const submit = (): void => {
     if (!text.trim() || splitting || attachments.uploading) return;
@@ -70,15 +77,16 @@ export function TaskBox() {
         data-testid="task-input"
       />
       <AttachmentList attachments={attachments} />
+      <div
+        className="px-8 py-2 text-2xs text-text-muted overflow-hidden text-ellipsis whitespace-nowrap"
+        title={capacity}
+        data-testid="task-capacity"
+      >
+        {capacity}
+      </div>
       {open && (
         <div className="flex items-center justify-between gap-8 px-8 py-4 border-t-2 border-border">
-          <span className="text-2xs text-text-muted">
-            {splitting
-              ? 'Reading your tasks...'
-              : attachments.uploading
-                ? 'Uploading images...'
-                : `${active} of ${maxActive} running. Ctrl+Enter starts.`}
-          </span>
+          <span className="text-2xs text-text-muted">Ctrl+Enter starts.</span>
           <div className="flex items-center gap-8">
             <AttachButton attachments={attachments} />
             <Button size="sm" variant="ghost" onClick={() => setOpen(false)}>

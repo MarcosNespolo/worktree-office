@@ -518,10 +518,15 @@ components:
       description: Every task started from the office, sent when it changes and every few seconds.
       type: object
       additionalProperties: false
-      required: [type, tasks, maxActive, active, splitting]
+      required: [type, tasks, maxActive, active, splitting, freeRooms]
       properties:
         type:
           const: tasksState
+        freeRooms:
+          type: array
+          items:
+            type: string
+          description: Rooms that can take a task right now, in the order they would be picked.
         tasks:
           type: array
           items:

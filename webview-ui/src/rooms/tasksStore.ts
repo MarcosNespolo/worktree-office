@@ -9,6 +9,7 @@ const EMPTY: TasksState = {
   maxActive: 0,
   active: 0,
   splitting: false,
+  freeRooms: [],
 };
 
 let current: TasksState = EMPTY;

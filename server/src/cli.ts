@@ -445,7 +445,13 @@ async function main(): Promise<void> {
     const rooms = new RoomsManager(store, roomsConfig.projects);
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
     const follower = new SessionFollower(store, rooms);
-    rooms.setOccupancy((roomPath) => follower.workingIn(roomPath));
+    const status = new StatusTracker(
+      store,
+      rooms,
+      roomsConfig.projects,
+      demo ? demoPullRequests : ghPullRequests,
+    );
+    rooms.setOccupancy((room) => follower.workingIn(room.path) || status.serverUpAt(room));
     followSession = (event) => follower.observe(event);
     const activity = new SessionActivity();
     setSessionActivityFilter((file) => activity.isRecent(file, GLOBAL_SCAN_ACTIVE_MAX_AGE_MS));
@@ -458,12 +464,6 @@ async function main(): Promise<void> {
     const sessionInfo = new SessionInfoTracker({ store, activity });
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
-    const status = new StatusTracker(
-      store,
-      rooms,
-      roomsConfig.projects,
-      demo ? demoPullRequests : ghPullRequests,
-    );
     await status.start();
     const tasks = new TaskRunner({
       store,

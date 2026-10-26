@@ -462,6 +462,7 @@ export type ReleaseNeed = 'open-pr' | 'agents' | 'dirty';
 
 export interface TasksState {
   type: 'tasksState';
+  freeRooms: string[];
   tasks: TaskInfo[];
   maxActive: number;
   active: number;

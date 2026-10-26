@@ -292,9 +292,14 @@ export class StatusTracker {
     }
   }
 
+  serverUpAt(room: Room): boolean {
+    const port = portFor(room, this.rooms.projectOf(room));
+    return port !== null && this.serverUp.get(port) === true;
+  }
+
   private async refreshPorts(): Promise<void> {
     const ports = new Set<number>();
-    for (const room of this.rooms.current) {
+    for (const room of this.rooms.everyRoom) {
       const port = portFor(room, this.rooms.projectOf(room));
       if (port !== null) ports.add(port);
     }

@@ -9,8 +9,7 @@ import { listDirectories, normalizeDirectoryPath } from '../directories.js';
 import { directoryNameFor, hostDirectory } from '../hostDirectory.js';
 import { writeLayoutToFile } from '../layoutPersistence.js';
 import type { ProjectConfig, RoomsConfig } from './config.js';
-import { ROOMS_POLL_INTERVAL_MS, ROOMS_STATE_FILE_NAME } from './constants.js';
-import { globToRegExp, matchesAny } from './glob.js';
+import { ROOMS_MAX, ROOMS_POLL_INTERVAL_MS, ROOMS_STATE_FILE_NAME } from './constants.js';
 import { planRoomsLayout } from './layout.js';
 import { discoverRooms, type Room, roomForPath } from './rooms.js';
 
@@ -52,7 +51,8 @@ export class RoomsManager {
   private signature: string | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
-  private occupancy: (roomPath: string) => boolean = () => false;
+  private all: Room[] = [];
+  private occupancy: (room: Room) => boolean = () => false;
   private readonly warned = new Set<string>();
   private readonly listeners: RoomsListener[] = [];
 
@@ -63,6 +63,10 @@ export class RoomsManager {
 
   get current(): readonly Room[] {
     return this.rooms;
+  }
+
+  get everyRoom(): readonly Room[] {
+    return this.all;
   }
 
   get enabled(): boolean {
@@ -85,7 +89,7 @@ export class RoomsManager {
   }
 
   roomFor(filePath: string | undefined): Room | null {
-    return roomForPath(this.rooms, filePath);
+    return roomForPath(this.all, filePath);
   }
 
   directoryNameFor(cwd: string | undefined): string | undefined {
@@ -113,22 +117,24 @@ export class RoomsManager {
     if (this.refreshing) return;
     this.refreshing = true;
     try {
-      const discovery = await discoverRooms(this.projects, this.rooms, (room) =>
-        this.isShown(room),
-      );
+      const discovery = await discoverRooms(this.projects, this.all);
       for (const project of discovery.failedProjects)
         this.warnOnce(
           `git:${project}`,
           `Cannot list worktrees of ${project}; keeping its last known rooms.`,
         );
-      if (discovery.truncated > 0) {
+      this.all = discovery.rooms;
+      const shown = this.all.filter((room) => this.isShown(room));
+      const truncated = shown.length - ROOMS_MAX;
+      if (truncated > 0) {
         this.warnOnce(
-          `max:${discovery.truncated}`,
-          `${discovery.truncated} worktree(s) left out: the office holds ${discovery.rooms.length} rooms at most.`,
+          `max:${truncated}`,
+          `${truncated} worktree(s) left out: the office holds ${ROOMS_MAX} rooms at most.`,
         );
       }
-      const signature = JSON.stringify(discovery.rooms.map((room) => [room.label, room.path]));
-      this.rooms = discovery.rooms;
+      const next = shown.slice(0, ROOMS_MAX);
+      const signature = JSON.stringify(next.map((room) => [room.label, room.path]));
+      this.rooms = next;
       const layoutChanged = signature !== this.signature;
       if (layoutChanged) {
         this.signature = signature;
@@ -142,15 +148,14 @@ export class RoomsManager {
     }
   }
 
-  setOccupancy(check: (roomPath: string) => boolean): void {
+  setOccupancy(check: (room: Room) => boolean): void {
     this.occupancy = check;
   }
 
   private isShown(room: Room): boolean {
     const pool = this.projectOf(room)?.launch.rooms ?? [];
     if (pool.length === 0 || room.branch !== null) return true;
-    if (matchesAny(room.path, pool.map(globToRegExp))) return true;
-    return this.occupancy(room.path);
+    return this.occupancy(room);
   }
 
   private warnOnce(key: string, message: string): void {
