@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '../components/ui/Button.js';
 import type { OfficeState } from '../office/engine/officeState.js';
@@ -46,10 +46,20 @@ export function ConversationPanel({
   const session = agentId === null ? undefined : sessions.get(agentId);
   const lastActivityAt = session?.lastActivityAt ?? null;
   const scroller = useRef<HTMLDivElement>(null);
+  const [full, setFull] = useState(false);
 
   useEffect(() => {
     if (agentId !== null) refreshConversation();
   }, [agentId, lastActivityAt]);
+
+  useEffect(() => {
+    if (!full) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setFull(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [full]);
 
   useEffect(() => {
     if (!result?.ok || sentTo === null || sentTo !== agentId) return;
@@ -73,15 +83,21 @@ export function ConversationPanel({
   const title = session?.title ?? `Session ${agentId}`;
 
   const show = (): void => {
+    setFull(false);
     officeState.selectedAgentId = agentId;
     officeState.cameraFollowId = agentId;
     if (inOffice) onOpenTerminal(agentId);
   };
+  const frame = full
+    ? 'fixed inset-0 z-[60]'
+    : 'absolute top-[72px] left-8 z-[44] w-[560px] max-w-[calc(100%-420px)] max-h-[calc(100vh-150px)]';
+  const column = full ? 'w-full max-w-[1100px] mx-auto' : '';
 
   return (
     <div
-      className="absolute top-[72px] left-8 z-[44] w-[560px] max-w-[calc(100%-420px)] max-h-[calc(100vh-150px)] pixel-panel flex flex-col"
+      className={`${frame} pixel-panel flex flex-col`}
       data-testid="conversation-panel"
+      data-full={full ? 'true' : 'false'}
     >
       <div className="flex items-center gap-10 px-10 py-6 border-b-2 border-border">
         <div className="flex-1 min-w-0">
@@ -97,9 +113,20 @@ export function ConversationPanel({
         <Button size="sm" onClick={show} data-testid="conversation-show">
           {inOffice ? 'Terminal' : 'Show'}
         </Button>
+        <Button
+          size="sm"
+          onClick={() => setFull((value) => !value)}
+          title={full ? 'Back to the window (Esc)' : 'Read this conversation in full screen'}
+          data-testid="conversation-full"
+        >
+          {full ? 'Exit full screen' : 'Full screen'}
+        </Button>
         <button
           type="button"
-          onClick={closeConversation}
+          onClick={() => {
+            setFull(false);
+            closeConversation();
+          }}
           title="Close"
           className="p-0 bg-transparent border-0 text-lg text-text-muted hover:text-text cursor-pointer"
           data-testid="conversation-close"
@@ -109,72 +136,78 @@ export function ConversationPanel({
       </div>
       <div
         ref={scroller}
-        className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-10 py-6 flex flex-col gap-10"
+        className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-10 py-6"
         data-testid="conversation-messages"
       >
-        {truncated && (
-          <div className="text-2xs text-text-muted text-center">Older messages are not shown.</div>
-        )}
-        {loading && messages.length === 0 && (
-          <div className="text-sm text-text-muted">Reading the conversation...</div>
-        )}
-        {!loading && messages.length === 0 && (
-          <div className="text-sm text-text-muted">No messages yet.</div>
-        )}
-        {messages.map((message, index) => (
-          <div
-            key={`${message.at ?? 0}-${index}`}
-            className={`text-sm leading-snug ${message.role === 'user' ? 'pl-24' : 'pr-24'}`}
-            data-testid={`conversation-${message.role}`}
-          >
-            <div
-              className={`text-2xs mb-2 ${message.role === 'user' ? 'text-accent-bright text-right' : 'text-text-muted'}`}
-            >
-              {message.role === 'user' ? 'You' : 'Claude'}
-              {message.at !== null ? ` · ${timeOf(message.at)}` : ''}
+        <div className={`${column} flex flex-col gap-10`}>
+          {truncated && (
+            <div className="text-2xs text-text-muted text-center">
+              Older messages are not shown.
             </div>
+          )}
+          {loading && messages.length === 0 && (
+            <div className="text-sm text-text-muted">Reading the conversation...</div>
+          )}
+          {!loading && messages.length === 0 && (
+            <div className="text-sm text-text-muted">No messages yet.</div>
+          )}
+          {messages.map((message, index) => (
             <div
-              className={`px-8 py-6 border-2 border-border ${message.role === 'user' ? 'bg-bg-dark' : ''}`}
+              key={`${message.at ?? 0}-${index}`}
+              className={`${full ? 'text-base' : 'text-sm'} leading-snug ${message.role === 'user' ? 'pl-24' : 'pr-24'}`}
+              data-testid={`conversation-${message.role}`}
             >
-              <Markdown text={message.text} />
+              <div
+                className={`text-2xs mb-2 ${message.role === 'user' ? 'text-accent-bright text-right' : 'text-text-muted'}`}
+              >
+                {message.role === 'user' ? 'You' : 'Claude'}
+                {message.at !== null ? ` · ${timeOf(message.at)}` : ''}
+              </div>
+              <div
+                className={`px-8 py-6 border-2 border-border ${message.role === 'user' ? 'bg-bg-dark' : ''}`}
+              >
+                <Markdown text={message.text} />
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
       <div className="px-10 py-6 border-t-2 border-border">
-        {needsApproval && inOffice && (
-          <div className="flex items-center gap-8 mb-6" data-testid="conversation-approval">
-            <span className="flex-1 text-sm text-status-permission">
-              Claude Code asks for permission.
-            </span>
-            <Button
-              size="sm"
-              variant="accent"
-              onClick={() => answerPermission(agentId, true)}
-              data-testid="conversation-approve"
-            >
-              Approve
-            </Button>
-            <Button
-              size="sm"
-              onClick={() => answerPermission(agentId, false)}
-              data-testid="conversation-deny"
-            >
-              Deny
-            </Button>
-          </div>
-        )}
-        {needsApproval && !inOffice && (
-          <div className="text-2xs text-status-permission mb-6">
-            This session waits for a permission answer in the app it runs in.
-          </div>
-        )}
-        <ReplyBox
-          agentId={agentId}
-          hint={replyHint(session, inOffice)}
-          images={!needsApproval}
-          multiline
-        />
+        <div className={column}>
+          {needsApproval && inOffice && (
+            <div className="flex items-center gap-8 mb-6" data-testid="conversation-approval">
+              <span className="flex-1 text-sm text-status-permission">
+                Claude Code asks for permission.
+              </span>
+              <Button
+                size="sm"
+                variant="accent"
+                onClick={() => answerPermission(agentId, true)}
+                data-testid="conversation-approve"
+              >
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => answerPermission(agentId, false)}
+                data-testid="conversation-deny"
+              >
+                Deny
+              </Button>
+            </div>
+          )}
+          {needsApproval && !inOffice && (
+            <div className="text-2xs text-status-permission mb-6">
+              This session waits for a permission answer in the app it runs in.
+            </div>
+          )}
+          <ReplyBox
+            agentId={agentId}
+            hint={replyHint(session, inOffice)}
+            images={!needsApproval}
+            multiline
+          />
+        </div>
       </div>
     </div>
   );
