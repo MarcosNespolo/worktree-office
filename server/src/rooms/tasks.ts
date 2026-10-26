@@ -17,7 +17,6 @@ import {
   TASK_PROMPT_QUIET_MS,
   TASK_PROMPT_READY_FALLBACK_MS,
   TASK_READY_MIN_VISIBLE,
-  TASK_SUBMIT_DELAY_MS,
   TASKS_BROADCAST_MS,
 } from './constants.js';
 import { git } from './git.js';
@@ -26,6 +25,7 @@ import type { RoomsManager } from './manager.js';
 import { type Room, samePath } from './rooms.js';
 import { portFor } from './status.js';
 import { splitTasks } from './taskText.js';
+import { plainText, READY, sendKeysOrText, TRUST, typeInto } from './terminalText.js';
 import { UsageMeter } from './usage.js';
 
 export type TaskStatus =
@@ -64,20 +64,7 @@ export interface TaskRunnerDeps {
 
 const ACTIVE = new Set<TaskStatus>(['preparing', 'starting', 'blocked', 'running']);
 const FINISHED_KEPT = 20;
-const ESC = String.fromCharCode(27);
-const BEL = String.fromCharCode(7);
-const PASTE_START = `${ESC}[200~`;
-const PASTE_END = `${ESC}[201~`;
-const ANSI = new RegExp(`${ESC}\\[[0-?]*[ -/]*[@-~]|${ESC}\\][^${BEL}]*${BEL}`, 'g');
-const READY =
-  /❯Try"|\?forshortcuts|(?:bypasspermissions|acceptedits|planmode|automode)on|shift\+tabtocycle/i;
-const TRUST = /trustthisfolder|doyoutrust|trustthefiles|quicksafetycheck/i;
 const TRUST_DETAIL = 'Claude Code asks whether to trust this folder.';
-
-export function typeInto(session: PtySession, text: string): void {
-  session.write(`${PASTE_START}${text}${PASTE_END}`);
-  setTimeout(() => session.write('\r'), TASK_SUBMIT_DELAY_MS);
-}
 
 export function fillTemplate(template: string, values: Record<string, string>): string {
   return template.replace(/\{(\w+)\}/g, (match, key: string) => values[key] ?? match);
@@ -214,12 +201,7 @@ export class TaskRunner {
   send(agentId: number, text: string): boolean {
     const session = this.deps.ptyManager.get(agentId);
     if (!session || !text.trim()) return false;
-    if (/^\S{1,3}$/.test(text.trim())) {
-      session.write(text.trim());
-      setTimeout(() => session.write('\r'), TASK_SUBMIT_DELAY_MS);
-    } else {
-      typeInto(session, text);
-    }
+    sendKeysOrText(session, text);
     const task = this.tasks.find((candidate) => candidate.agentId === agentId);
     if (task) this.trustAnswers.get(task.id)?.();
     return true;
@@ -415,8 +397,8 @@ export class TaskRunner {
     const unsubscribe = session.onData((data) => {
       if (finished()) return;
       screen = `${screen}${data}`.slice(-8000);
-      visible += data.replace(ANSI, '').replace(/\s+/g, '').length;
-      const plain = screen.replace(ANSI, '').replace(/\s+/g, '');
+      visible += plainText(data).length;
+      const plain = plainText(screen);
       if (TRUST.test(plain)) {
         screen = '';
         visible = 0;

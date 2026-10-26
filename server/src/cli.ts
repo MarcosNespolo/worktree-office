@@ -45,6 +45,7 @@ import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
+import { replyToSession } from './rooms/reply.js';
 import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
 import { SessionSweeper } from './rooms/sweeper.js';
@@ -475,6 +476,19 @@ async function main(): Promise<void> {
         ptyManager.dispose(agentId);
         runtime.closeAgent(agentId);
       },
+      replyToSession: (agentId, text) =>
+        replyToSession(
+          {
+            store,
+            runtime,
+            ptyManager,
+            provider: claudeProvider,
+            activity,
+            sendToTerminal: (id, reply) => tasks.send(id, reply),
+          },
+          agentId,
+          text,
+        ),
     });
     const demoDriver = demo
       ? new DemoDriver(demo, (event) => deliverHook(claudeProvider.id, event))

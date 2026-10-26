@@ -51,7 +51,8 @@ export type ServerMessage =
   | RoomsState
   | ReleaseResult
   | TasksState
-  | SessionsInfo;
+  | SessionsInfo
+  | ReplyResult;
 
 export type ClientMessage =
   | WebviewReady
@@ -84,7 +85,8 @@ export type ClientMessage =
   | ReleaseRoom
   | StartTasks
   | CancelTask
-  | SendToAgent;
+  | SendToAgent
+  | ReplyToSession;
 
 export interface ProviderCapabilities {
   type: 'providerCapabilities';
@@ -489,6 +491,14 @@ export interface SessionInfo {
   lastActivityAt: number | null;
   lastText: string | null;
   prNumbers: number[];
+  app: string | null;
+}
+
+export interface ReplyResult {
+  type: 'replyResult';
+  agentId: number;
+  ok: boolean;
+  message: string;
 }
 
 export interface WebviewReady {
@@ -651,6 +661,12 @@ export interface CancelTask {
 
 export interface SendToAgent {
   type: 'sendToAgent';
+  agentId: number;
+  text: string;
+}
+
+export interface ReplyToSession {
+  type: 'replyToSession';
   agentId: number;
   text: string;
 }

@@ -1,13 +1,43 @@
 import type { ExtraClientMessageHandler } from '../httpServer.js';
 import { parseReleaseRequest, type ReleaseDeps, releaseRoom } from './release.js';
+import type { ReplyOutcome } from './reply.js';
 import type { TaskRunner } from './tasks.js';
 
 export interface RoomActionDeps extends ReleaseDeps {
   tasks: TaskRunner;
+  replyToSession: (agentId: number, text: string) => Promise<ReplyOutcome>;
 }
 
 export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandler {
   const releasing = new Set<string>();
+  const replying = new Set<number>();
+
+  const answer = (msg: Record<string, unknown>, reply: (m: Record<string, unknown>) => void) => {
+    if (typeof msg.agentId !== 'number' || typeof msg.text !== 'string') return;
+    const agentId = msg.agentId;
+    if (replying.has(agentId)) {
+      reply({
+        type: 'replyResult',
+        agentId,
+        ok: false,
+        message: 'A reply to this session is already on its way.',
+      });
+      return;
+    }
+    replying.add(agentId);
+    deps
+      .replyToSession(agentId, msg.text)
+      .then((outcome) => reply({ type: 'replyResult', ...outcome }))
+      .catch((err: unknown) =>
+        reply({
+          type: 'replyResult',
+          agentId,
+          ok: false,
+          message: `Reply failed: ${err instanceof Error ? err.message : String(err)}`,
+        }),
+      )
+      .finally(() => replying.delete(agentId));
+  };
 
   const release = (msg: Record<string, unknown>, reply: (m: Record<string, unknown>) => void) => {
     const request = parseReleaseRequest(msg);
@@ -49,6 +79,9 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
         return true;
       case 'cancelTask':
         if (typeof msg.id === 'string') deps.tasks.cancel(msg.id);
+        return true;
+      case 'replyToSession':
+        answer(msg, reply);
         return true;
       case 'sendToAgent':
         if (typeof msg.agentId === 'number' && typeof msg.text === 'string') {

@@ -10,6 +10,7 @@ import {
   SESSION_LAST_TEXT_MAX,
   SESSION_PR_LINKS_MAX,
 } from './constants.js';
+import { transcriptOrigin } from './transcript.js';
 
 export interface SessionInfo {
   id: number;
@@ -17,6 +18,7 @@ export interface SessionInfo {
   lastActivityAt: number | null;
   lastText: string | null;
   prNumbers: number[];
+  app: string | null;
 }
 
 export interface SessionsSnapshot {
@@ -110,6 +112,7 @@ function readRange(file: string, start: number, length: number): Buffer | null {
 
 export class SessionInfoTracker {
   private readonly files = new Map<string, FileState>();
+  private readonly apps = new Map<string, string>();
   private readonly timer: ReturnType<typeof setInterval>;
   private lastSent = '';
   private lastSentAt = 0;
@@ -140,10 +143,14 @@ export class SessionInfoTracker {
               .slice(0, SESSION_PR_LINKS_MAX)
               .map(([number]) => number)
           : [],
+        app: this.appOf(agent.jsonlFile),
       });
     }
     for (const file of [...this.files.keys()]) {
       if (!used.has(file)) this.files.delete(file);
+    }
+    for (const file of [...this.apps.keys()]) {
+      if (!used.has(file)) this.apps.delete(file);
     }
     sessions.sort((a, b) => a.id - b.id);
     return { type: 'sessionsInfo', sessions };
@@ -157,6 +164,13 @@ export class SessionInfoTracker {
     this.lastSent = serialized;
     this.lastSentAt = now;
     this.deps.store.broadcast(snapshot as unknown as Record<string, unknown>);
+  }
+
+  private appOf(file: string): string | null {
+    if (this.apps.has(file)) return this.apps.get(file) ?? null;
+    const app = transcriptOrigin(file).app ?? null;
+    if (app) this.apps.set(file, app);
+    return app;
   }
 
   private update(file: string): FileState | null {
