@@ -277,6 +277,7 @@ async function main(): Promise<void> {
   try {
     // Create runtime first (before server.start, so we can pass it in)
     const runtime = new AgentRuntime(store, claudeProvider);
+    runtime.restoreExternalAgents();
 
     let followSession: (event: Record<string, unknown>) => void = () => {};
     let extraClientMessage: ExtraClientMessageHandler = () => false;
