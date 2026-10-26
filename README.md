@@ -101,6 +101,8 @@ The "Needs you" panel lists what is waiting on you:
 
 Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room. **Show** selects it in the office.
 
+Click the message excerpt, or **conversation**, to read the whole exchange: the recent messages of the session, formatted, with a reply box under them. When a session running in an office terminal asks for permission, the conversation shows **Approve** and **Deny**. **Show** selects the session in the office, and opens its terminal when the office started it.
+
 Those items, and sessions waiting for your input, have a reply box, so you can answer without leaving the office:
 
 - a session running in an office terminal gets your reply typed in;
