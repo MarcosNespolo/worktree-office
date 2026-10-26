@@ -582,7 +582,7 @@ components:
       description: Title, last activity and last message of one session.
       type: object
       additionalProperties: false
-      required: [id, title, lastActivityAt, lastText, prNumbers, app]
+      required: [id, title, lastActivityAt, lastText, prNumbers, app, stage, stageAt]
       properties:
         id:
           type: integer
@@ -604,6 +604,19 @@ components:
         app:
           type: [string, 'null']
           description: Where the session was started, as Claude Code records it, such as claude-vscode or cli.
+        stage:
+          oneOf:
+            - $ref: '#/components/schemas/SessionStage'
+            - type: 'null'
+          description: What the session was last doing, judged from the tools it used.
+        stageAt:
+          type: [integer, 'null']
+          description: Epoch milliseconds of the tool call that set the stage.
+
+    SessionStage:
+      description: Kind of work a session is doing, judged from its tool calls.
+      type: string
+      enum: [planning, coding, testing, reviewing, reading, working]
 
     TaskStatus:
       description: Lifecycle of a task.

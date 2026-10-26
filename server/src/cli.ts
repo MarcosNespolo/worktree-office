@@ -38,7 +38,7 @@ import type { ExtraClientMessageHandler } from './httpServer.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { createRoomActions } from './rooms/actions.js';
 import { SessionActivity } from './rooms/activity.js';
-import { loadRoomsConfig } from './rooms/config.js';
+import { defaultStages, loadRoomsConfig } from './rooms/config.js';
 import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
 import { dropParentSessionMarkers } from './rooms/env.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
@@ -50,6 +50,7 @@ import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
 import { SessionSweeper } from './rooms/sweeper.js';
 import { TaskRunner } from './rooms/tasks.js';
+import { transcriptCwd } from './rooms/transcript.js';
 import { pruneUploads, registerUploadRoute } from './rooms/uploads.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
@@ -461,7 +462,15 @@ async function main(): Promise<void> {
       activity,
       idleMs: roomsConfig.sessions.hideAfterIdleMinutes * 60_000,
     });
-    const sessionInfo = new SessionInfoTracker({ store, activity });
+    const sessionInfo = new SessionInfoTracker({
+      store,
+      activity,
+      stagesFor: (file) => {
+        const room = rooms.roomFor(transcriptCwd(file));
+        const project = room ? rooms.projectOf(room) : roomsConfig.projects[0];
+        return project?.stages ?? defaultStages();
+      },
+    });
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
     await status.start();

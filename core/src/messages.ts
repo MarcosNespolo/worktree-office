@@ -496,7 +496,11 @@ export interface SessionInfo {
   lastText: string | null;
   prNumbers: number[];
   app: string | null;
+  stage: SessionStage | null;
+  stageAt: number | null;
 }
+
+export type SessionStage = 'planning' | 'coding' | 'testing' | 'reviewing' | 'reading' | 'working';
 
 export interface ReplyResult {
   type: 'replyResult';
