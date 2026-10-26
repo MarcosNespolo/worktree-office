@@ -28,6 +28,7 @@ export interface NeedRule {
 
 export interface ReleaseConfig {
   mode: 'detach' | 'remove';
+  keep: string[];
   before: string[];
 }
 
@@ -199,6 +200,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
     needsYou: parseNeeds(obj.needsYou),
     release: {
       mode: objectOf(obj.release).mode === 'remove' ? 'remove' : 'detach',
+      keep: stringList(objectOf(obj.release).keep),
       before: stringList(objectOf(obj.release).before),
     },
     launch: {

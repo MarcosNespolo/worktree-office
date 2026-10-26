@@ -27,6 +27,7 @@ export const SESSION_LAST_TEXT_MAX = 600;
 export const SESSION_LAST_TEXT_HEAD = 160;
 export const SESSION_PR_LINKS_MAX = 20;
 export const RELEASE_COMMAND_TIMEOUT_MS = 60_000;
+export const RELEASE_REMOVE_TIMEOUT_MS = 10 * 60_000;
 export const RELEASE_LOG_FILE_NAME = 'release.log';
 export const RELEASE_MAX_LISTED_FILES = 20;
 export const ROOMS_MAX = 24;
