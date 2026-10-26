@@ -482,7 +482,7 @@ components:
           description: Epoch milliseconds of the last message from the user, the assistant or the system.
         lastText:
           type: [string, 'null']
-          description: Start of the last text the assistant wrote.
+          description: Last text the assistant wrote, cut in the middle when long so its end, where questions usually are, stays.
         prNumbers:
           type: array
           items:

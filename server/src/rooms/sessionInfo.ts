@@ -6,6 +6,7 @@ import {
   SESSION_INFO_BROADCAST_MS,
   SESSION_INFO_POLL_MS,
   SESSION_INFO_TAIL_BYTES,
+  SESSION_LAST_TEXT_HEAD,
   SESSION_LAST_TEXT_MAX,
   SESSION_PR_LINKS_MAX,
 } from './constants.js';
@@ -55,6 +56,13 @@ function textOf(content: unknown): string | null {
   return nonEmpty(parts.join(' '));
 }
 
+function excerpt(text: string): string {
+  const flat = text.replace(/\s+/g, ' ').trim();
+  if (flat.length <= SESSION_LAST_TEXT_MAX) return flat;
+  const tail = SESSION_LAST_TEXT_MAX - SESSION_LAST_TEXT_HEAD;
+  return `${flat.slice(0, SESSION_LAST_TEXT_HEAD).trimEnd()} … ${flat.slice(-tail).trimStart()}`;
+}
+
 function applyLine(state: FileState, line: string): void {
   if (!MARKERS.some((marker) => line.includes(marker))) return;
   let record: Record<string, unknown>;
@@ -79,7 +87,7 @@ function applyLine(state: FileState, line: string): void {
     case 'assistant': {
       if (record.isSidechain === true) break;
       const text = textOf((record.message as { content?: unknown } | undefined)?.content);
-      if (text) state.lastText = text.replace(/\s+/g, ' ').slice(0, SESSION_LAST_TEXT_MAX);
+      if (text) state.lastText = excerpt(text);
       break;
     }
   }
