@@ -101,6 +101,12 @@ The "Needs you" panel lists what is waiting on you:
 
 Items about a pull request show the session working on it, with its title and the end of its last message, where its questions usually are. The session is the one that most recently linked that pull request, or else the one sitting in its room. **Show** selects it in the office.
 
+Those items, and sessions waiting for your input, have a reply box, so you can answer without leaving the office:
+
+- a session running in an office terminal gets your reply typed in;
+- any other session, for example one open in VS Code, is continued in a new office terminal with `claude --resume`, and your reply goes in once Claude Code is ready. From then on, answer that conversation only in the office, or it splits in two;
+- a session that is still working refuses replies until it stops.
+
 Click **alerts off** in the panel header to get a system notification whenever a new item shows up while the office tab is not focused. The browser asks for permission the first time.
 
 These project fields tune the signs and the panel:
