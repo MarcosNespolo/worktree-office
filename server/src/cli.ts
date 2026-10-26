@@ -26,16 +26,18 @@ import {
   readConfig,
 } from './configPersistence.js';
 import {
+  GLOBAL_SCAN_ACTIVE_MAX_AGE_MS,
   MAX_PORT,
   MIN_PORT,
   TERMINAL_DISABLED_BY_FLAG_REASON,
   WILDCARD_HOSTNAMES,
 } from './constants.js';
 import { FileStateAdapter } from './fileStateAdapter.js';
-import { setDirectoryNameResolver } from './fileWatcher.js';
+import { setDirectoryNameResolver, setSessionActivityFilter } from './fileWatcher.js';
 import type { ExtraClientMessageHandler } from './httpServer.js';
 import { claudeProvider, copyHookScript, hookProviderById } from './providers/index.js';
 import { createRoomActions } from './rooms/actions.js';
+import { SessionActivity } from './rooms/activity.js';
 import { loadRoomsConfig } from './rooms/config.js';
 import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
 import { dropParentSessionMarkers } from './rooms/env.js';
@@ -44,6 +46,7 @@ import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
 import { StatusTracker } from './rooms/status.js';
+import { SessionSweeper } from './rooms/sweeper.js';
 import { TaskRunner } from './rooms/tasks.js';
 import { PixelAgentsServer } from './server.js';
 import { PtySessionManager } from './terminal/ptySessionManager.js';
@@ -432,6 +435,14 @@ async function main(): Promise<void> {
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
     const follower = new SessionFollower(store, rooms);
     followSession = (event) => follower.observe(event);
+    const activity = new SessionActivity();
+    setSessionActivityFilter((file) => activity.isRecent(file, GLOBAL_SCAN_ACTIVE_MAX_AGE_MS));
+    const sweeper = new SessionSweeper({
+      store,
+      runtime,
+      activity,
+      idleMs: roomsConfig.sessions.hideAfterIdleMinutes * 60_000,
+    });
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
     const status = new StatusTracker(
@@ -507,6 +518,7 @@ async function main(): Promise<void> {
       // leave a child that ignores SIGHUP orphaned on a dead server.
       await ptyManager.disposeAll();
       demoDriver?.stop();
+      sweeper.stop();
       tasks.stop();
       status.stop();
       rooms.stop();
