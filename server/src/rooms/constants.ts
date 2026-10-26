@@ -11,6 +11,10 @@ export const TASK_SPLIT_TIMEOUT_MS = 120_000;
 export const TASK_PROMPT_READY_FALLBACK_MS = 15_000;
 export const TASK_PROMPT_QUIET_MS = 1_500;
 export const TASK_READY_MIN_VISIBLE = 150;
+export const STAGE_STICKY_MS = 3 * 60_000;
+export const STAGE_TESTING_DEFAULT =
+  '\\b(vitest|jest|mocha|pytest|playwright|cypress|tsc|eslint|curl|next (dev|build)|(npm|pnpm|yarn|bun) (run )?(test|lint|typecheck|check|build|dev)|cargo test|go test|make test)\\b';
+export const STAGE_REVIEWING_DEFAULT = 'review|revis|veredito|verdict|audit';
 export const CONVERSATION_TAIL_STEPS: readonly number[] = [
   1024 * 1024,
   4 * 1024 * 1024,

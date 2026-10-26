@@ -4,7 +4,12 @@ import * as path from 'path';
 
 import { SERVER_JSON_DIR } from '../constants.js';
 import { expandTilde } from '../directories.js';
-import { ROOMS_CONFIG_FILE_NAME, SESSION_IDLE_DEFAULT_MINUTES } from './constants.js';
+import {
+  ROOMS_CONFIG_FILE_NAME,
+  SESSION_IDLE_DEFAULT_MINUTES,
+  STAGE_REVIEWING_DEFAULT,
+  STAGE_TESTING_DEFAULT,
+} from './constants.js';
 import { repositoryTopLevel } from './git.js';
 
 export interface DevServerConfig {
@@ -45,8 +50,14 @@ export interface CreateWorktreeConfig {
   after: string[];
 }
 
+export interface StagesConfig {
+  testing: RegExp;
+  reviewing: RegExp;
+}
+
 export interface ProjectConfig {
   name: string;
+  stages: StagesConfig;
   root: string;
   include: string[];
   exclude: string[];
@@ -150,6 +161,34 @@ function parseDevServer(raw: unknown): DevServerConfig {
   };
 }
 
+function regexOr(raw: unknown, fallback: string, project: string, name: string): RegExp {
+  if (typeof raw === 'string' && raw.trim()) {
+    try {
+      return new RegExp(raw, 'i');
+    } catch (err) {
+      console.warn(
+        `[worktree-office] ${project}: ignoring stages.${name}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
+  return new RegExp(fallback, 'i');
+}
+
+export function defaultStages(): StagesConfig {
+  return {
+    testing: new RegExp(STAGE_TESTING_DEFAULT, 'i'),
+    reviewing: new RegExp(STAGE_REVIEWING_DEFAULT, 'i'),
+  };
+}
+
+function parseStages(raw: unknown, project: string): StagesConfig {
+  const obj = objectOf(raw);
+  return {
+    testing: regexOr(obj.testing, STAGE_TESTING_DEFAULT, project, 'testing'),
+    reviewing: regexOr(obj.reviewing, STAGE_REVIEWING_DEFAULT, project, 'reviewing'),
+  };
+}
+
 function parseFields(raw: unknown, project: string): FieldRule[] {
   if (!Array.isArray(raw)) return [];
   const rules: FieldRule[] = [];
@@ -191,6 +230,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
     typeof obj.name === 'string' && obj.name.trim() ? obj.name.trim() : path.basename(root);
   return {
     name,
+    stages: parseStages(obj.stages, name),
     root,
     include: stringList(obj.include),
     exclude: stringList(obj.exclude),

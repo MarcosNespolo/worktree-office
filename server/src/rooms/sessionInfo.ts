@@ -2,6 +2,7 @@ import * as fs from 'fs';
 
 import type { AgentStateStore } from '../agentStateStore.js';
 import type { SessionActivity } from './activity.js';
+import type { StagesConfig } from './config.js';
 import {
   SESSION_INFO_BROADCAST_MS,
   SESSION_INFO_POLL_MS,
@@ -10,6 +11,7 @@ import {
   SESSION_LAST_TEXT_MAX,
   SESSION_PR_LINKS_MAX,
 } from './constants.js';
+import { applyStage, classifyTool, type SessionStage, type StageState } from './stages.js';
 import { transcriptOrigin } from './transcript.js';
 
 export interface SessionInfo {
@@ -19,6 +21,8 @@ export interface SessionInfo {
   lastText: string | null;
   prNumbers: number[];
   app: string | null;
+  stage: SessionStage | null;
+  stageAt: number | null;
 }
 
 export interface SessionsSnapshot {
@@ -29,9 +33,10 @@ export interface SessionsSnapshot {
 export interface SessionInfoDeps {
   store: AgentStateStore;
   activity: SessionActivity;
+  stagesFor: (file: string) => StagesConfig;
 }
 
-interface FileState {
+interface FileState extends StageState {
   offset: number;
   skipFirstLine: boolean;
   aiTitle: string | null;
@@ -65,7 +70,7 @@ function excerpt(text: string): string {
   return `${flat.slice(0, SESSION_LAST_TEXT_HEAD).trimEnd()} … ${flat.slice(-tail).trimStart()}`;
 }
 
-function applyLine(state: FileState, line: string): void {
+function applyLine(state: FileState, line: string, stages: StagesConfig): void {
   if (!MARKERS.some((marker) => line.includes(marker))) return;
   let record: Record<string, unknown>;
   try {
@@ -88,8 +93,17 @@ function applyLine(state: FileState, line: string): void {
       break;
     case 'assistant': {
       if (record.isSidechain === true) break;
-      const text = textOf((record.message as { content?: unknown } | undefined)?.content);
+      const content = (record.message as { content?: unknown } | undefined)?.content;
+      const text = textOf(content);
       if (text) state.lastText = excerpt(text);
+      if (Array.isArray(content)) {
+        const at = typeof record.timestamp === 'string' ? Date.parse(record.timestamp) : NaN;
+        for (const block of content as Array<{ type?: string; name?: string; input?: unknown }>) {
+          if (block.type !== 'tool_use' || typeof block.name !== 'string') continue;
+          const classified = classifyTool(block.name, block.input, stages);
+          if (classified) applyStage(state, classified, Number.isFinite(at) ? at : Date.now());
+        }
+      }
       break;
     }
   }
@@ -144,6 +158,8 @@ export class SessionInfoTracker {
               .map(([number]) => number)
           : [],
         app: this.appOf(agent.jsonlFile),
+        stage: state?.stage ?? null,
+        stageAt: state?.stageAt ?? null,
       });
     }
     for (const file of [...this.files.keys()]) {
@@ -190,6 +206,9 @@ export class SessionInfoTracker {
         customTitle: null,
         lastText: null,
         prLinks: new Map(),
+        stage: null,
+        stageAt: null,
+        strong: false,
       };
       this.files.set(file, state);
     }
@@ -202,7 +221,8 @@ export class SessionInfoTracker {
       lines = lines.slice(1);
       state.skipFirstLine = false;
     }
-    for (const line of lines) applyLine(state, line);
+    const stages = this.deps.stagesFor(file);
+    for (const line of lines) applyLine(state, line, stages);
     state.offset += end + 1;
     return state;
   }
