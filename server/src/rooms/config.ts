@@ -25,11 +25,16 @@ export interface FieldRule {
   from: 'body' | 'labels';
 }
 
+export type NeedState = 'attention' | 'ready' | 'idle';
+
 export interface NeedRule {
   field: string;
   values: string[];
   title: string | null;
+  state: NeedState | null;
 }
+
+const NEED_STATES: readonly string[] = ['attention', 'ready', 'idle'];
 
 export interface ReleaseConfig {
   mode: 'detach' | 'remove';
@@ -219,6 +224,10 @@ function parseNeeds(raw: unknown): NeedRule[] {
       field: obj.field as string,
       values: stringList(obj.values),
       title: typeof obj.title === 'string' && obj.title.trim() ? obj.title.trim() : null,
+      state:
+        typeof obj.state === 'string' && NEED_STATES.includes(obj.state)
+          ? (obj.state as NeedState)
+          : null,
     }));
 }
 

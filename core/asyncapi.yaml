@@ -322,12 +322,14 @@ components:
       description: Something about a room that needs the user.
       type: object
       additionalProperties: false
-      required: [id, kind, room, title, url, prUrl]
+      required: [id, kind, state, room, title, url, prUrl]
       properties:
         id:
           type: string
         kind:
           $ref: '#/components/schemas/RoomNeedKind'
+        state:
+          $ref: '#/components/schemas/RoomNeedState'
         room:
           type: string
         title:
@@ -664,6 +666,11 @@ components:
       description: Why a room needs the user.
       type: string
       enum: [changes-requested, checks-failing, ready-to-merge, stale-worktree, dev-server, field]
+
+    RoomNeedState:
+      description: The state a need puts its room in. attention asks for the user now, ready waits for a check or a merge, idle is a leftover to clean up.
+      type: string
+      enum: [attention, ready, idle]
 
     AgentSelected:
       description: An agent's terminal was focused (VS Code only). UI should highlight it.

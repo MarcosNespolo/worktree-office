@@ -436,6 +436,7 @@ export type RoomChecksState = 'passing' | 'failing' | 'pending';
 export interface RoomNeed {
   id: string;
   kind: RoomNeedKind;
+  state: RoomNeedState;
   room: string;
   title: string;
   url: string | null;
@@ -449,6 +450,8 @@ export type RoomNeedKind =
   | 'stale-worktree'
   | 'dev-server'
   | 'field';
+
+export type RoomNeedState = 'attention' | 'ready' | 'idle';
 
 export interface ReleaseResult {
   type: 'releaseResult';
