@@ -130,9 +130,9 @@ Every door sign with a branch checked out or a dev server running has a **releas
 
 Every release is logged in `~/.worktree-office/release.log`. The main checkout is never released.
 
-| Field     | Meaning                                                                                                                                                                                                                           |
-| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `release` | `{ "mode": "detach", "before": ["npm run clean"] }`. `mode` is `detach` (default: keep the folder, check out the default branch) or `remove` (delete the worktree). `before` commands run in the worktree, in the platform shell. |
+| Field     | Meaning                                                                                                                                                                                                                                                                                                                                                                                       |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `release` | `{ "mode": "remove", "keep": ["~/code/acme-web-slot*"], "before": ["npm run clean"] }`. `mode` is `detach` (default: keep the folder, check out the default branch) or `remove` (delete the worktree). With `remove`, worktrees matching the `keep` globs are detached instead, which suits worktrees you reuse for every task. `before` commands run in the worktree, in the platform shell. |
 
 ### Starting tasks
 

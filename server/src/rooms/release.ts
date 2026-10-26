@@ -9,8 +9,10 @@ import {
   RELEASE_COMMAND_TIMEOUT_MS,
   RELEASE_LOG_FILE_NAME,
   RELEASE_MAX_LISTED_FILES,
+  RELEASE_REMOVE_TIMEOUT_MS,
 } from './constants.js';
 import { git, runCommand } from './git.js';
+import { globToRegExp, matchesAny } from './glob.js';
 import type { RoomsManager } from './manager.js';
 import { samePath } from './rooms.js';
 import type { StatusTracker } from './status.js';
@@ -224,8 +226,14 @@ export async function releaseRoom(
     if (stopped.length > 0) steps.push(`stopped the dev server on port ${info.port}`);
   }
 
-  if (project.release.mode === 'remove') {
-    const removed = await git(['-C', project.root, 'worktree', 'remove', room.path]);
+  const kept = matchesAny(room.path, project.release.keep.map(globToRegExp));
+  if (project.release.mode === 'remove' && !kept) {
+    const removed = await runCommand(
+      'git',
+      ['-C', project.root, 'worktree', 'remove', room.path],
+      project.root,
+      RELEASE_REMOVE_TIMEOUT_MS,
+    );
     if (!removed.ok)
       return result(
         room.label,
