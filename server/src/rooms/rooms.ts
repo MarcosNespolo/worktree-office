@@ -70,6 +70,7 @@ function uniqueLabel(room: Room, used: Set<string>): string {
 export async function discoverRooms(
   projects: readonly ProjectConfig[],
   previous: readonly Room[],
+  isShown: (room: Room) => boolean = () => true,
 ): Promise<Discovery> {
   const rooms: Room[] = [];
   const failedProjects: string[] = [];
@@ -86,10 +87,11 @@ export async function discoverRooms(
       rooms.push({ ...room, label });
     }
   }
+  const shown = rooms.filter(isShown);
   return {
-    rooms: rooms.slice(0, ROOMS_MAX),
+    rooms: shown.slice(0, ROOMS_MAX),
     failedProjects,
-    truncated: Math.max(0, rooms.length - ROOMS_MAX),
+    truncated: Math.max(0, shown.length - ROOMS_MAX),
   };
 }
 

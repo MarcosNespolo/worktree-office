@@ -3,7 +3,7 @@ import { directoryNameFor } from '../hostDirectory.js';
 import type { AgentState } from '../types.js';
 import { toForwardSlashes } from './glob.js';
 import type { RoomsManager } from './manager.js';
-import type { Room } from './rooms.js';
+import { isInside, type Room, samePath } from './rooms.js';
 import { transcriptCwd } from './transcript.js';
 
 interface SessionTrace {
@@ -88,6 +88,15 @@ export class SessionFollower {
     for (const agent of this.store.values()) {
       if (agent.sessionId === sessionId) this.apply(agent);
     }
+  }
+
+  workingIn(roomPath: string): boolean {
+    for (const agent of this.store.values()) {
+      if (agent.leadAgentId !== undefined) continue;
+      const cwd = this.traces.get(agent.sessionId)?.cwd ?? this.cwdFromTranscript(agent);
+      if (cwd && (samePath(cwd, roomPath) || isInside(cwd, roomPath))) return true;
+    }
+    return false;
   }
 
   private cwdFromTranscript(agent: AgentState): string | undefined {
