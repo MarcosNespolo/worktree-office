@@ -80,6 +80,81 @@ function waitUntilReady(session: PtySession): Promise<Readiness> {
   });
 }
 
+type Continued =
+  { ok: true; newId: number; session: PtySession } | { ok: false; outcome: ReplyOutcome };
+
+function continueInTerminal(deps: ReplyDeps, agentId: number): Continued {
+  const refuse = (message: string): Continued => ({
+    ok: false,
+    outcome: { ok: false, message, agentId },
+  });
+  const agent = deps.store.get(agentId);
+  const transcriptPath = agent?.jsonlFile ?? '';
+  if (!agent || !transcriptPath || !fs.existsSync(transcriptPath)) {
+    return refuse('This session has no conversation to continue.');
+  }
+  const lastAt = deps.activity.lastAt(transcriptPath);
+  if (agent.activeToolIds.size > 0 || (lastAt !== null && Date.now() - lastAt < REPLY_BUSY_MS)) {
+    return refuse('This session is working right now. Try again when it stops.');
+  }
+  const cwd = transcriptCwd(transcriptPath);
+  if (!cwd || !fs.existsSync(cwd)) {
+    return refuse('The folder of this session no longer exists.');
+  }
+
+  const sessionId = path.basename(transcriptPath, '.jsonl');
+  deps.runtime.removeAgent(agentId);
+  deps.runtime.knownJsonlFiles.add(transcriptPath);
+  const newId = launchStandaloneAgent(deps, {
+    directoryPath: cwd,
+    resume: { sessionId, transcriptPath },
+  });
+  const session = newId === null ? undefined : deps.ptyManager.get(newId);
+  if (newId === null || !session) {
+    deps.runtime.knownJsonlFiles.delete(transcriptPath);
+    return refuse('Could not open a terminal for this session.');
+  }
+  console.log(
+    `[worktree-office] Continuing session ${sessionId.slice(0, 8)} in an office terminal (agent ${newId}).`,
+  );
+  return { ok: true, newId, session };
+}
+
+export async function openSessionTerminal(deps: ReplyDeps, agentId: number): Promise<ReplyOutcome> {
+  if (deps.ptyManager.get(agentId)) {
+    return { ok: true, message: 'This session already runs in an office terminal.', agentId };
+  }
+  const continued = continueInTerminal(deps, agentId);
+  if (!continued.ok) return continued.outcome;
+  const newId = continued.newId;
+  switch (await waitUntilReady(continued.session)) {
+    case 'ready':
+      return {
+        ok: true,
+        message: 'The conversation continues in an office terminal.',
+        agentId: newId,
+      };
+    case 'trust':
+      return {
+        ok: true,
+        message: 'Claude Code asks whether to trust the folder. Answer in the office terminal.',
+        agentId: newId,
+      };
+    case 'closed':
+      return {
+        ok: false,
+        message: 'Claude Code closed while opening the session.',
+        agentId: newId,
+      };
+    case 'timeout':
+      return {
+        ok: true,
+        message: 'The session is still opening in an office terminal.',
+        agentId: newId,
+      };
+  }
+}
+
 export async function replyToSession(
   deps: ReplyDeps,
   agentId: number,
@@ -95,39 +170,9 @@ export async function replyToSession(
       : { ok: false, message: 'The terminal of this session is closed.', agentId };
   }
 
-  const agent = deps.store.get(agentId);
-  const transcriptPath = agent?.jsonlFile ?? '';
-  if (!agent || !transcriptPath || !fs.existsSync(transcriptPath)) {
-    return { ok: false, message: 'This session has no conversation to continue.', agentId };
-  }
-  const lastAt = deps.activity.lastAt(transcriptPath);
-  if (agent.activeToolIds.size > 0 || (lastAt !== null && Date.now() - lastAt < REPLY_BUSY_MS)) {
-    return {
-      ok: false,
-      message: 'This session is working right now. Reply when it stops.',
-      agentId,
-    };
-  }
-  const cwd = transcriptCwd(transcriptPath);
-  if (!cwd || !fs.existsSync(cwd)) {
-    return { ok: false, message: 'The folder of this session no longer exists.', agentId };
-  }
-
-  const sessionId = path.basename(transcriptPath, '.jsonl');
-  deps.runtime.removeAgent(agentId);
-  deps.runtime.knownJsonlFiles.add(transcriptPath);
-  const newId = launchStandaloneAgent(deps, {
-    directoryPath: cwd,
-    resume: { sessionId, transcriptPath },
-  });
-  const session = newId === null ? undefined : deps.ptyManager.get(newId);
-  if (newId === null || !session) {
-    deps.runtime.knownJsonlFiles.delete(transcriptPath);
-    return { ok: false, message: 'Could not open a terminal for this session.', agentId };
-  }
-  console.log(
-    `[worktree-office] Continuing session ${sessionId.slice(0, 8)} in an office terminal (agent ${newId}).`,
-  );
+  const continued = continueInTerminal(deps, agentId);
+  if (!continued.ok) return continued.outcome;
+  const { newId, session } = continued;
 
   switch (await waitUntilReady(session)) {
     case 'ready':

@@ -88,6 +88,7 @@ export type ClientMessage =
   | CancelTask
   | SendToAgent
   | ReplyToSession
+  | OpenSessionTerminal
   | GetSessionMessages
   | AnswerPermission;
 
@@ -694,6 +695,11 @@ export interface ReplyToSession {
   agentId: number;
   text: string;
   images?: string[];
+}
+
+export interface OpenSessionTerminal {
+  type: 'openSessionTerminal';
+  agentId: number;
 }
 
 export interface GetSessionMessages {

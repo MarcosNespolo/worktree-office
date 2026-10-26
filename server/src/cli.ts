@@ -45,7 +45,7 @@ import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { RoomsManager } from './rooms/manager.js';
-import { replyToSession } from './rooms/reply.js';
+import { openSessionTerminal, type ReplyDeps, replyToSession } from './rooms/reply.js';
 import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
 import { SessionSweeper } from './rooms/sweeper.js';
@@ -484,6 +484,14 @@ async function main(): Promise<void> {
       config: roomsConfig.tasks,
       bypassPermissions: () => adapter.getSetting('pixel-agents.bypassPermissions', false),
     });
+    const replyDeps: ReplyDeps = {
+      store,
+      runtime,
+      ptyManager,
+      provider: claudeProvider,
+      activity,
+      sendToTerminal: (id, reply) => tasks.send(id, reply),
+    };
     extraClientMessage = createRoomActions({
       store,
       rooms,
@@ -495,20 +503,8 @@ async function main(): Promise<void> {
         ptyManager.dispose(agentId);
         runtime.closeAgent(agentId);
       },
-      replyToSession: (agentId, text, images) =>
-        replyToSession(
-          {
-            store,
-            runtime,
-            ptyManager,
-            provider: claudeProvider,
-            activity,
-            sendToTerminal: (id, reply) => tasks.send(id, reply),
-          },
-          agentId,
-          text,
-          images,
-        ),
+      replyToSession: (agentId, text, images) => replyToSession(replyDeps, agentId, text, images),
+      openSessionTerminal: (agentId) => openSessionTerminal(replyDeps, agentId),
     });
     const demoDriver = demo
       ? new DemoDriver(demo, (event) => deliverHook(claudeProvider.id, event))
