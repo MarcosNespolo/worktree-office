@@ -4,6 +4,7 @@ import type {
   HooksConsentRequest,
   ReleaseResult,
   RoomsState,
+  SessionsInfo,
   TasksState,
 } from '../../../core/src/messages.js';
 import { playDoneSound, playPermissionSound, setSoundEnabled } from '../notificationSound.js';
@@ -26,6 +27,7 @@ import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
 import { receiveReleaseResult } from '../rooms/releaseStore.js';
 import { setRoomsState } from '../rooms/roomsStore.js';
+import { setSessionsInfo } from '../rooms/sessionsStore.js';
 import { setTasksState } from '../rooms/tasksStore.js';
 import { isBrowserRuntime, isE2E } from '../runtime.js';
 import { transport } from '../transport/index.js';
@@ -416,6 +418,8 @@ export function useExtensionMessages(
         os.removeAgent(id);
       } else if (msg.type === 'tasksState') {
         setTasksState(msg as unknown as TasksState);
+      } else if (msg.type === 'sessionsInfo') {
+        setSessionsInfo(msg as unknown as SessionsInfo);
       } else if (msg.type === 'releaseResult') {
         receiveReleaseResult(msg as unknown as ReleaseResult);
       } else if (msg.type === 'roomsState') {

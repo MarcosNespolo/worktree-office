@@ -24,6 +24,7 @@ import {
   TOOL_OVERLAY_VERTICAL_OFFSET,
 } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
+import { getSessionInfo, idleLabel } from '../../rooms/sessionsStore.js';
 import type { OfficeState } from '../engine/officeState.js';
 import { overlayProjection } from '../projection.js';
 import { getCachedSprite } from '../sprites/spriteCache.js';
@@ -36,6 +37,7 @@ import { CharacterState } from '../types.js';
 // going idle waiting on the user (Notification(idle_prompt)) additionally
 // surfaces this label. Driven by Character.waitingAwaitingInput.
 const WAITING_INPUT_ACTIVITY_TEXT = 'Waiting for input';
+const IDLE_ACTIVITY_TEXT = 'Idle';
 
 interface ToolOverlayProps {
   officeState: OfficeState;
@@ -79,7 +81,7 @@ function getActivityText(
     }
   }
 
-  return 'Idle';
+  return IDLE_ACTIVITY_TEXT;
 }
 
 function getFuelColor(ratio: number): string {
@@ -258,6 +260,8 @@ export function ToolOverlay({
             ch.waitingAwaitingInput ?? false,
           );
         }
+        const session = isSub ? undefined : getSessionInfo(id);
+        if (activityText === IDLE_ACTIVITY_TEXT && session?.title) activityText = session.title;
 
         // Determine dot color
         const tools = agentTools[id];
@@ -272,6 +276,9 @@ export function ToolOverlay({
         } else if (isActive && hasActiveTools) {
           dotColor = 'var(--color-status-active)';
         }
+
+        const idleText =
+          session && !isActive && !hasActiveTools ? idleLabel(session.lastActivityAt) : null;
 
         // Team info
         const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
@@ -329,7 +336,7 @@ export function ToolOverlay({
                   </span>
                   {ch.directoryName && (
                     <span className="text-2xs leading-none overflow-hidden text-ellipsis block">
-                      {ch.directoryName}
+                      {idleText ? `${ch.directoryName} · ${idleText}` : ch.directoryName}
                     </span>
                   )}
                 </div>
