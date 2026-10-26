@@ -480,6 +480,7 @@ async function main(): Promise<void> {
       rooms,
       status,
       tasks,
+      sessionInfo,
       hasTerminal: (agentId) => ptyManager.has(agentId),
       closeAgent: (agentId) => {
         ptyManager.dispose(agentId);

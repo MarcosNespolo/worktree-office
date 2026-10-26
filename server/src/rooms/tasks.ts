@@ -203,6 +203,13 @@ export class TaskRunner {
     this.publish();
   }
 
+  press(agentId: number, keys: string): boolean {
+    const session = this.deps.ptyManager.get(agentId);
+    if (!session || !keys) return false;
+    session.write(keys);
+    return true;
+  }
+
   send(agentId: number, text: string): boolean {
     const session = this.deps.ptyManager.get(agentId);
     if (!session || !text.trim()) return false;

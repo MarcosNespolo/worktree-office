@@ -11,6 +11,15 @@ export const TASK_SPLIT_TIMEOUT_MS = 120_000;
 export const TASK_PROMPT_READY_FALLBACK_MS = 15_000;
 export const TASK_PROMPT_QUIET_MS = 1_500;
 export const TASK_READY_MIN_VISIBLE = 150;
+export const CONVERSATION_TAIL_STEPS: readonly number[] = [
+  1024 * 1024,
+  4 * 1024 * 1024,
+  16 * 1024 * 1024,
+];
+export const CONVERSATION_DEFAULT_LIMIT = 40;
+export const CONVERSATION_MAX_LIMIT = 200;
+export const PERMISSION_ALLOW_KEYS = '1';
+export const PERMISSION_DENY_KEYS = String.fromCharCode(27);
 export const UPLOADS_DIR_NAME = 'uploads';
 export const UPLOAD_MAX_BYTES = 20 * 1024 * 1024;
 export const UPLOAD_KEEP_MS = 7 * 24 * 3_600_000;
