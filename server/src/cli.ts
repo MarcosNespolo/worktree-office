@@ -437,6 +437,7 @@ async function main(): Promise<void> {
     const rooms = new RoomsManager(store, roomsConfig.projects);
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
     const follower = new SessionFollower(store, rooms);
+    rooms.setOccupancy((roomPath) => follower.workingIn(roomPath));
     followSession = (event) => follower.observe(event);
     const activity = new SessionActivity();
     setSessionActivityFilter((file) => activity.isRecent(file, GLOBAL_SCAN_ACTIVE_MAX_AGE_MS));

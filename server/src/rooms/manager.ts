@@ -10,6 +10,7 @@ import { directoryNameFor, hostDirectory } from '../hostDirectory.js';
 import { writeLayoutToFile } from '../layoutPersistence.js';
 import type { ProjectConfig, RoomsConfig } from './config.js';
 import { ROOMS_POLL_INTERVAL_MS, ROOMS_STATE_FILE_NAME } from './constants.js';
+import { globToRegExp, matchesAny } from './glob.js';
 import { planRoomsLayout } from './layout.js';
 import { discoverRooms, type Room, roomForPath } from './rooms.js';
 
@@ -51,6 +52,7 @@ export class RoomsManager {
   private signature: string | null = null;
   private timer: ReturnType<typeof setInterval> | null = null;
   private refreshing = false;
+  private occupancy: (roomPath: string) => boolean = () => false;
   private readonly warned = new Set<string>();
   private readonly listeners: RoomsListener[] = [];
 
@@ -111,7 +113,9 @@ export class RoomsManager {
     if (this.refreshing) return;
     this.refreshing = true;
     try {
-      const discovery = await discoverRooms(this.projects, this.rooms);
+      const discovery = await discoverRooms(this.projects, this.rooms, (room) =>
+        this.isShown(room),
+      );
       for (const project of discovery.failedProjects)
         this.warnOnce(
           `git:${project}`,
@@ -136,6 +140,17 @@ export class RoomsManager {
     } finally {
       this.refreshing = false;
     }
+  }
+
+  setOccupancy(check: (roomPath: string) => boolean): void {
+    this.occupancy = check;
+  }
+
+  private isShown(room: Room): boolean {
+    const pool = this.projectOf(room)?.launch.rooms ?? [];
+    if (pool.length === 0 || room.branch !== null) return true;
+    if (matchesAny(room.path, pool.map(globToRegExp))) return true;
+    return this.occupancy(room.path);
   }
 
   private warnOnce(key: string, message: string): void {
