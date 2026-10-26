@@ -10,11 +10,13 @@ export function ReplyBox({
   hint,
   images = true,
   multiline = false,
+  menu = false,
 }: {
   agentId: number;
   hint?: string | null;
   images?: boolean;
   multiline?: boolean;
+  menu?: boolean;
 }) {
   const [text, setText] = useState('');
   const { sending } = useReplyState();
@@ -55,7 +57,7 @@ export function ReplyBox({
               if (event.key === 'Enter') send();
             }}
             onPaste={images ? attachments.onPaste : undefined}
-            placeholder="Reply, or 1, 2, 3 for a menu"
+            placeholder={menu ? 'Reply, or 1, 2, 3 for a menu' : 'Reply'}
             className={fieldClass}
             data-testid="reply-input"
           />

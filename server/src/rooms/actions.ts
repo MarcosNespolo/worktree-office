@@ -16,6 +16,7 @@ export interface RoomActionDeps extends ReleaseDeps {
   tasks: TaskRunner;
   sessionInfo: SessionInfoTracker;
   replyToSession: (agentId: number, text: string, images: string[]) => Promise<ReplyOutcome>;
+  openSessionTerminal: (agentId: number) => Promise<ReplyOutcome>;
 }
 
 function integerOr(value: unknown, fallback: number): number {
@@ -30,9 +31,11 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
   const releasing = new Set<string>();
   const replying = new Set<number>();
 
-  const answer = (msg: Record<string, unknown>, reply: (m: Record<string, unknown>) => void) => {
-    if (typeof msg.agentId !== 'number' || typeof msg.text !== 'string') return;
-    const agentId = msg.agentId;
+  const settle = (
+    agentId: number,
+    run: () => Promise<ReplyOutcome>,
+    reply: (m: Record<string, unknown>) => void,
+  ) => {
     if (replying.has(agentId)) {
       reply({
         type: 'replyResult',
@@ -43,8 +46,7 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
       return;
     }
     replying.add(agentId);
-    deps
-      .replyToSession(agentId, msg.text, imagesOf(msg))
+    run()
       .then((outcome) => reply({ type: 'replyResult', ...outcome }))
       .catch((err: unknown) =>
         reply({
@@ -103,9 +105,21 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
       case 'cancelTask':
         if (typeof msg.id === 'string') deps.tasks.cancel(msg.id);
         return true;
-      case 'replyToSession':
-        answer(msg, reply);
+      case 'replyToSession': {
+        const { agentId, text } = msg;
+        if (typeof agentId === 'number' && typeof text === 'string') {
+          const images = imagesOf(msg);
+          settle(agentId, () => deps.replyToSession(agentId, text, images), reply);
+        }
         return true;
+      }
+      case 'openSessionTerminal': {
+        const { agentId } = msg;
+        if (typeof agentId === 'number') {
+          settle(agentId, () => deps.openSessionTerminal(agentId), reply);
+        }
+        return true;
+      }
       case 'sendToAgent':
         if (typeof msg.agentId === 'number' && typeof msg.text === 'string') {
           deps.tasks.send(msg.agentId, msg.text);

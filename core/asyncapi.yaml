@@ -172,6 +172,7 @@ components:
         - $ref: '#/components/schemas/CancelTask'
         - $ref: '#/components/schemas/SendToAgent'
         - $ref: '#/components/schemas/ReplyToSession'
+        - $ref: '#/components/schemas/OpenSessionTerminal'
         - $ref: '#/components/schemas/GetSessionMessages'
         - $ref: '#/components/schemas/AnswerPermission'
       discriminator: type
@@ -434,6 +435,17 @@ components:
             type: string
           description: Paths returned by POST /api/uploads, attached to the reply.
 
+    OpenSessionTerminal:
+      description: Open a session in an office terminal. A session running elsewhere is continued in a new office terminal with nothing typed; the outcome comes back as a replyResult.
+      type: object
+      additionalProperties: false
+      required: [type, agentId]
+      properties:
+        type:
+          const: openSessionTerminal
+        agentId:
+          type: integer
+
     GetSessionMessages:
       description: Ask for the recent conversation of a session, read from its transcript.
       type: object
@@ -499,7 +511,7 @@ components:
       enum: [user, assistant]
 
     ReplyResult:
-      description: Outcome of a replyToSession request, sent to the client that asked.
+      description: Outcome of a replyToSession or openSessionTerminal request, sent to the client that asked.
       type: object
       additionalProperties: false
       required: [type, agentId, ok, message]

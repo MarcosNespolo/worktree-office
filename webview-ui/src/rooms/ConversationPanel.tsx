@@ -14,6 +14,7 @@ import { ReplyBox } from './ReplyBox.js';
 import { replyHint } from './replyHint.js';
 import { useReplyState } from './replyStore.js';
 import { idleLabel, useSessionsInfo } from './sessionsStore.js';
+import { TerminalButton } from './TerminalButton.js';
 
 const REFRESH_AFTER_REPLY_MS = 3_000;
 
@@ -110,9 +111,13 @@ export function ConversationPanel({
             {inOffice ? ' · office terminal' : ''}
           </div>
         </div>
-        <Button size="sm" onClick={show} data-testid="conversation-show">
-          {inOffice ? 'Terminal' : 'Show'}
-        </Button>
+        <TerminalButton
+          agentId={agentId}
+          inOffice={inOffice}
+          session={session}
+          onReveal={show}
+          onLeave={() => setFull(false)}
+        />
         <Button
           size="sm"
           onClick={() => setFull((value) => !value)}

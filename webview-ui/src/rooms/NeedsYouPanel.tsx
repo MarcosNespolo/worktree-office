@@ -13,6 +13,7 @@ import { replyHint } from './replyHint.js';
 import { useRoomsState } from './roomsStore.js';
 import { useSessionsInfo } from './sessionsStore.js';
 import { useTasksState } from './tasksStore.js';
+import { TerminalButton } from './TerminalButton.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
 
 const RELEASABLE = new Set<string>(['stale-worktree', 'dev-server']);
@@ -154,9 +155,12 @@ function NeedRow({
         )}
       </div>
       {session && (
-        <Button size="sm" onClick={() => onShow(session.id)}>
-          Show
-        </Button>
+        <TerminalButton
+          agentId={session.id}
+          inOffice={inOffice(session.id)}
+          session={session}
+          onReveal={onShow}
+        />
       )}
       {need.url && <ExternalLink href={need.url}>Open</ExternalLink>}
       {need.prUrl && need.prUrl !== need.url && <ExternalLink href={need.prUrl}>PR</ExternalLink>}
@@ -279,12 +283,22 @@ export function NeedsYouPanel({
                       agentId={need.id}
                       hint={replyHint(sessions.get(need.id), inOffice(need.id))}
                       images={need.kind === 'input'}
+                      menu={inOffice(need.id)}
                     />
                   )}
                 </div>
-                <Button size="sm" onClick={() => focus(need.id)}>
-                  Show
-                </Button>
+                {inOffice(need.id) || (need.kind === 'input' && sessions.has(need.id)) ? (
+                  <TerminalButton
+                    agentId={need.id}
+                    inOffice={inOffice(need.id)}
+                    session={sessions.get(need.id)}
+                    onReveal={focus}
+                  />
+                ) : (
+                  <Button size="sm" onClick={() => focus(need.id)}>
+                    Show
+                  </Button>
+                )}
               </div>
             ))}
             {blockedTasks.map((task) => (
@@ -297,12 +311,17 @@ export function NeedsYouPanel({
                   <div className="text-sm leading-tight text-status-permission">{task.detail}</div>
                   <div className="text-2xs text-text-muted">{task.room ?? task.title}</div>
                   {task.agentId !== null && inOffice(task.agentId) && (
-                    <ReplyBox agentId={task.agentId} images={false} />
+                    <ReplyBox agentId={task.agentId} images={false} menu />
                   )}
                 </div>
-                <Button size="sm" onClick={() => task.agentId !== null && focus(task.agentId)}>
-                  Show
-                </Button>
+                {task.agentId !== null && (
+                  <TerminalButton
+                    agentId={task.agentId}
+                    inOffice={inOffice(task.agentId)}
+                    session={sessions.get(task.agentId)}
+                    onReveal={focus}
+                  />
+                )}
               </div>
             ))}
             {needs.map((need) => (
