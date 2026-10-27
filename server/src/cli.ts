@@ -46,6 +46,7 @@ import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { registerImageRoute } from './rooms/images.js';
 import { RoomsManager } from './rooms/manager.js';
+import { remoteControlName } from './rooms/remoteName.js';
 import { openSessionTerminal, type ReplyDeps, replyToSession } from './rooms/reply.js';
 import { SessionInfoTracker } from './rooms/sessionInfo.js';
 import { StatusTracker } from './rooms/status.js';
@@ -495,6 +496,13 @@ async function main(): Promise<void> {
       provider: claudeProvider,
       activity,
       sendToTerminal: (id, reply) => tasks.send(id, reply),
+      remoteControlNameFor: (cwd, agentId) => {
+        const room = rooms.roomFor(cwd);
+        const project = room ? rooms.projectOf(room) : roomsConfig.projects[0];
+        if (!project?.launch.remoteControl) return undefined;
+        const title = sessionInfo.snapshot().sessions.find((item) => item.id === agentId)?.title;
+        return remoteControlName(room?.label ?? path.basename(cwd), title);
+      },
     };
     extraClientMessage = createRoomActions({
       store,

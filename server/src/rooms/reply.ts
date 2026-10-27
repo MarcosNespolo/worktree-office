@@ -27,6 +27,7 @@ export interface ReplyDeps {
   provider: LaunchStandaloneAgentDeps['provider'];
   activity: SessionActivity;
   sendToTerminal: (agentId: number, text: string) => boolean;
+  remoteControlNameFor?: (cwd: string, agentId: number) => string | undefined;
 }
 
 export interface ReplyOutcome {
@@ -103,11 +104,13 @@ function continueInTerminal(deps: ReplyDeps, agentId: number): Continued {
   }
 
   const sessionId = path.basename(transcriptPath, '.jsonl');
+  const remoteControlName = deps.remoteControlNameFor?.(cwd, agentId);
   deps.runtime.removeAgent(agentId);
   deps.runtime.knownJsonlFiles.add(transcriptPath);
   const newId = launchStandaloneAgent(deps, {
     directoryPath: cwd,
     resume: { sessionId, transcriptPath },
+    remoteControlName,
   });
   const session = newId === null ? undefined : deps.ptyManager.get(newId);
   if (newId === null || !session) {

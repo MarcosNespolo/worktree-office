@@ -22,6 +22,7 @@ import {
 import { git } from './git.js';
 import { globToRegExp, matchesAny } from './glob.js';
 import type { RoomsManager } from './manager.js';
+import { remoteControlName } from './remoteName.js';
 import { type Room, samePath } from './rooms.js';
 import { portFor } from './status.js';
 import { splitTasks } from './taskText.js';
@@ -345,6 +346,9 @@ export class TaskRunner {
       {
         directoryPath: room.path,
         bypassPermissions: project.launch.skipPermissions || this.deps.bypassPermissions(),
+        remoteControlName: project.launch.remoteControl
+          ? remoteControlName(room.label, task.title)
+          : undefined,
       },
     );
     const session = agentId === null ? undefined : this.deps.ptyManager.get(agentId);

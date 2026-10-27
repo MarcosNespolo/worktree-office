@@ -46,6 +46,7 @@ export interface LaunchConfig {
   prompt: string;
   skipPermissions: boolean;
   rooms: string[];
+  remoteControl: boolean;
 }
 
 export interface CreateWorktreeConfig {
@@ -262,6 +263,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
           : '{text}',
       skipPermissions: objectOf(obj.launch).skipPermissions === true,
       rooms: stringList(objectOf(obj.launch).rooms),
+      remoteControl: objectOf(obj.launch).remoteControl === true,
     },
     createWorktree: parseCreateWorktree(obj.createWorktree),
   };

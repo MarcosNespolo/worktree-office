@@ -102,10 +102,11 @@ function getSessionDirs(workspacePath: string): string[] {
 function buildLaunchCommand(
   sessionId: string,
   cwd: string,
-  opts?: { bypassPermissions?: boolean; resume?: boolean },
+  opts?: { bypassPermissions?: boolean; resume?: boolean; remoteControlName?: string },
 ): { command: string; args: string[]; env?: Record<string, string> } {
   const args = opts?.resume ? ['--resume', sessionId] : ['--session-id', sessionId];
   if (opts?.bypassPermissions) args.push('--dangerously-skip-permissions');
+  if (opts?.remoteControlName) args.push('--remote-control', opts.remoteControlName);
   return { command: 'claude', args, env: { PWD: cwd } };
 }
 

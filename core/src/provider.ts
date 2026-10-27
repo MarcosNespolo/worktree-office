@@ -133,7 +133,7 @@ export interface HookProvider {
   buildLaunchCommand?(
     sessionId: string,
     cwd: string,
-    opts?: { bypassPermissions?: boolean; resume?: boolean },
+    opts?: { bypassPermissions?: boolean; resume?: boolean; remoteControlName?: string },
   ): {
     command: string;
     args: string[];
