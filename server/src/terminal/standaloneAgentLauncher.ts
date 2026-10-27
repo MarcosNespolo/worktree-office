@@ -42,6 +42,7 @@ export interface LaunchStandaloneAgentOptions {
    *  per-launch choice made in the office. */
   bypassPermissions?: boolean;
   resume?: { sessionId: string; transcriptPath: string };
+  remoteControlName?: string;
   cols?: number;
   rows?: number;
 }
@@ -67,6 +68,7 @@ export function launchStandaloneAgent(
   const launch = provider.buildLaunchCommand?.(sessionId, cwd, {
     bypassPermissions: options.bypassPermissions,
     resume: options.resume !== undefined,
+    remoteControlName: options.remoteControlName,
   });
   if (!launch) {
     console.error('[Pixel Agents] Terminal: provider.buildLaunchCommand is not implemented');

@@ -36,6 +36,7 @@ export const UPLOAD_TYPES: Readonly<Record<string, string>> = {
 };
 export const REPLY_BUSY_MS = 15_000;
 export const REPLY_START_TIMEOUT_MS = 90_000;
+export const REMOTE_CONTROL_NAME_MAX = 60;
 export const TASK_SUBMIT_DELAY_MS = 400;
 export const TASK_PREPARE_TIMEOUT_MS = 20 * 60_000;
 export const TASKS_BROADCAST_MS = 10_000;
