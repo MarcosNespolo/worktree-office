@@ -25,6 +25,7 @@ import {
 } from '../../constants.js';
 import type { SubagentCharacter } from '../../hooks/useExtensionMessages.js';
 import { getSessionInfo, idleLabel, stillWorking } from '../../rooms/sessionsStore.js';
+import { STATE_COLOR } from '../../rooms/workState.js';
 import type { OfficeState } from '../engine/officeState.js';
 import { type LabelSlot, placeLabels } from '../labelLayout.js';
 import { overlayProjection } from '../projection.js';
@@ -323,6 +324,24 @@ export function ToolOverlay({
           : working
             ? (session.stage ?? null)
             : idleLabel(session.lastActivityAt);
+        const pinnedLabel = isSelected || isHovered || isSub;
+        const waitingOnYou = hasWaitingBubble && ch.waitingAwaitingInput === true;
+        const headline = !pinnedLabel && session?.title ? session.title : activityText;
+        const stateText = pinnedLabel
+          ? idleText
+          : hasPermission
+            ? 'needs approval'
+            : waitingOnYou
+              ? 'waiting for you'
+              : working
+                ? (session?.stage ?? 'working')
+                : idleText;
+        const stateColor =
+          !pinnedLabel && (hasPermission || waitingOnYou)
+            ? STATE_COLOR.attention
+            : !pinnedLabel && working
+              ? STATE_COLOR.working
+              : undefined;
 
         // Team info
         const teamRoleLabel = ch.isTeamLead ? 'LEAD' : ch.agentName || null;
@@ -380,11 +399,17 @@ export function ToolOverlay({
                       fontStyle: isSub ? 'italic' : undefined,
                     }}
                   >
-                    {activityText}
+                    {headline}
                   </span>
                   {ch.directoryName && (
                     <span className="text-2xs leading-none overflow-hidden text-ellipsis block">
-                      {idleText ? `${ch.directoryName} · ${idleText}` : ch.directoryName}
+                      {ch.directoryName}
+                      {stateText ? ' · ' : ''}
+                      {stateText && (
+                        <span style={stateColor ? { color: stateColor } : undefined}>
+                          {stateText}
+                        </span>
+                      )}
                     </span>
                   )}
                 </div>

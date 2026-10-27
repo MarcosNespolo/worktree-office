@@ -80,7 +80,7 @@ export const WALL_COLOR: TileColor = { h: 214, s: 30, b: -100, c: -55 };
 export const FLOOR_COLORS: Record<number, TileColor> = {
   [FLOOR_ROOM_B]: { h: 209, s: 39, b: -25, c: -80 },
   [FLOOR_ROOM_A]: { h: 25, s: 48, b: -43, c: -88 },
-  [FLOOR_LOBBY]: { h: 209, s: 0, b: -16, c: -8 },
+  [FLOOR_LOBBY]: { h: 228, s: 10, b: -52, c: -96 },
 };
 
 export const AREA_HUE_START = 205;

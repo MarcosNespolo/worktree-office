@@ -88,7 +88,6 @@ export function TaskPanel({
     if (!current.open || current.agentId === null) {
       selectSession(lastOpenedTerminal.agentId, 'terminal');
     }
-    // Only a newly opened terminal should move the panel, not a selection change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lastOpenedTerminal]);
 
