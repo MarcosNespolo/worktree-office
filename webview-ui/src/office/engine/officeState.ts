@@ -29,7 +29,9 @@ import { findPath, getWalkableTiles, isWalkable } from '../layout/tileMap.js';
 import { getPetCount, getPetName } from '../sprites/petSpriteData.js';
 import { getLoadedCharacterCount } from '../sprites/spriteData.js';
 import type {
+  AreaDefinition,
   Character,
+  ColorValue,
   FurnitureInstance,
   OfficeLayout,
   Pet,
@@ -80,6 +82,34 @@ export class OfficeState {
   subscribeSelection(listener: (id: number | null) => void): () => void {
     this.selectionListeners.add(listener);
     return () => this.selectionListeners.delete(listener);
+  }
+  private areaColors = new Map<string, string>();
+  private floorTints = new Map<string, ColorValue>();
+  private tintedFloors: { layout: OfficeLayout; colors: Array<ColorValue | null> } | null = null;
+  setAreaColors(colors: Map<string, string>, floors: Map<string, ColorValue>): void {
+    this.areaColors = colors;
+    this.floorTints = floors;
+    this.tintedFloors = null;
+  }
+  tileColorsForRender(layout: OfficeLayout): Array<ColorValue | null> | undefined {
+    const base = layout.tileColors;
+    const areaTiles = layout.areaTiles;
+    if (!base || !areaTiles || this.floorTints.size === 0) return base;
+    if (this.tintedFloors?.layout === layout) return this.tintedFloors.colors;
+    const colors = base.map((color, index) => {
+      const label = areaTiles[index];
+      const tint = label ? this.floorTints.get(label) : undefined;
+      return tint && color ? tint : color;
+    });
+    this.tintedFloors = { layout, colors };
+    return colors;
+  }
+  areasForRender(areas: AreaDefinition[] | undefined): AreaDefinition[] | undefined {
+    if (!areas || this.areaColors.size === 0) return areas;
+    return areas.map((area) => {
+      const color = this.areaColors.get(area.label);
+      return color ? { ...area, color } : area;
+    });
   }
   cameraFollowId: number | null = null;
   hoveredAgentId: number | null = null;

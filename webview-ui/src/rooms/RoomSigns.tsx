@@ -1,19 +1,48 @@
 import { useEffect, useState } from 'react';
 
-import type { RoomInfo } from '../../../core/src/messages.js';
 import { TILE_SIZE } from '../constants.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { overlayProjection } from '../office/projection.js';
-import type { ToolActivity } from '../office/types.js';
-import { collectAgentNeeds } from './agentNeeds.js';
-import { requestRelease, useReleaseState } from './releaseStore.js';
+import type { ColorValue, ToolActivity } from '../office/types.js';
+import { useReleaseState } from './releaseStore.js';
 import { areaBounds } from './roomGeometry.js';
 import { useRoomsState } from './roomsStore.js';
-import { roomStage } from './roomStage.js';
-import { useSessionsInfo } from './sessionsStore.js';
+import { selectTarget, useSelection } from './selectionStore.js';
+import { findItem, targetOf, useWorkItems, type WorkItem } from './workItems.js';
+import { STATE_COLOR, STATE_LABEL, type WorkState } from './workState.js';
 
 const SIGN_Z_INDEX = 5;
-const SIGN_TOP_OFFSET_PX = 4;
+const FRAME_Z_INDEX = 4;
+const SIGN_TOP_OFFSET_PX = 6;
+const FREE_STATE: WorkState = 'idle';
+
+const STATE_VAR: Record<WorkState, string> = {
+  attention: '--color-state-attention',
+  working: '--color-state-working',
+  ready: '--color-state-ready',
+  idle: '--color-state-idle',
+  failed: '--color-state-failed',
+  queued: '--color-state-idle',
+};
+
+const STATE_FLOOR: Record<WorkState, ColorValue> = {
+  attention: { h: 40, s: 50, b: -32, c: -80 },
+  working: { h: 214, s: 42, b: -28, c: -80 },
+  ready: { h: 135, s: 30, b: -38, c: -82 },
+  idle: { h: 230, s: 6, b: -30, c: -70 },
+  failed: { h: 2, s: 48, b: -34, c: -82 },
+  queued: { h: 230, s: 6, b: -30, c: -70 },
+};
+
+const CHECKS_ICON: Record<string, { icon: string; color: string; title: string }> = {
+  passing: { icon: 'check_circle', color: STATE_COLOR.ready, title: 'Checks passing' },
+  failing: { icon: 'cancel', color: STATE_COLOR.failed, title: 'Checks failing' },
+  pending: { icon: 'pending', color: STATE_COLOR.attention, title: 'Checks running' },
+};
+
+function cssColor(name: string): string {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
 
 interface RoomSignsProps {
   officeState: OfficeState;
@@ -25,31 +54,6 @@ interface RoomSignsProps {
   agentAwaitingInput: Record<number, boolean>;
   agentTools: Record<number, ToolActivity[]>;
 }
-
-function pullRequestText(room: RoomInfo): string {
-  const pr = room.pr;
-  if (!pr) return room.branch ? 'no pull request' : 'free';
-  if (pr.state === 'merged' || pr.state === 'closed') return `#${pr.number} ${pr.state}`;
-  if (pr.review === 'changes-requested') return `#${pr.number} changes requested`;
-  if (pr.review === 'approved') return `#${pr.number} approved`;
-  return `#${pr.number} ${pr.state === 'draft' ? 'draft' : 'in review'}`;
-}
-
-function pullRequestTone(room: RoomInfo): string {
-  const pr = room.pr;
-  if (!pr) return 'text-text-muted';
-  if (pr.state === 'merged') return 'text-accent-bright';
-  if (pr.state === 'closed') return 'text-text-muted';
-  if (pr.review === 'changes-requested') return 'text-danger';
-  if (pr.review === 'approved') return 'text-status-success';
-  return 'text-status-active';
-}
-
-const CHECKS: Record<string, { text: string; tone: string }> = {
-  passing: { text: 'checks ok', tone: 'text-status-success' },
-  failing: { text: 'checks failing', tone: 'text-danger' },
-  pending: { text: 'checks running', tone: 'text-status-permission' },
-};
 
 export function RoomSigns({
   officeState,
@@ -63,17 +67,35 @@ export function RoomSigns({
 }: RoomSignsProps) {
   const { rooms } = useRoomsState();
   const { busy } = useReleaseState();
-  const sessions = useSessionsInfo();
-  const needIds = new Set(
-    collectAgentNeeds(officeState, agents, agentStatuses, agentAwaitingInput, agentTools).map(
-      (need) => need.id,
-    ),
+  const selection = useSelection();
+  const { items } = useWorkItems(
+    officeState,
+    agents,
+    agentStatuses,
+    agentAwaitingInput,
+    agentTools,
   );
-  const busyIds = new Set(
-    Object.entries(agentTools)
-      .filter(([, tools]) => tools.some((tool) => !tool.done))
-      .map(([id]) => Number(id)),
-  );
+  const itemByRoom = new Map<string, WorkItem>();
+  for (const item of items) if (item.room) itemByRoom.set(item.room, item);
+  const colorKey = rooms
+    .map((room) => `${room.label}=${itemByRoom.get(room.label)?.view.state ?? FREE_STATE}`)
+    .join('|');
+
+  useEffect(() => {
+    const colors = new Map<string, string>();
+    const floors = new Map<string, ColorValue>();
+    for (const entry of colorKey.split('|')) {
+      if (!entry) continue;
+      const split = entry.lastIndexOf('=');
+      const label = entry.slice(0, split);
+      const state = entry.slice(split + 1) as WorkState;
+      const color = cssColor(STATE_VAR[state]);
+      if (color) colors.set(label, color);
+      floors.set(label, STATE_FLOOR[state]);
+    }
+    officeState.setAreaColors(colors, floors);
+  }, [colorKey, officeState]);
+
   const [, setTick] = useState(0);
   useEffect(() => {
     let frame = 0;
@@ -96,6 +118,11 @@ export function RoomSigns({
     window.devicePixelRatio || 1,
   );
   const bounds = areaBounds(layout);
+  const roomOfAgent =
+    selection.agentId === null
+      ? null
+      : (officeState.characters.get(selection.agentId)?.directoryName ?? null);
+  const selected = selection.open ? findItem(items, selection, roomOfAgent) : undefined;
 
   return (
     <>
@@ -104,76 +131,90 @@ export function RoomSigns({
         if (!box) return null;
         const left = project.toScreenX(box.minCol * TILE_SIZE);
         const width = project.toScreenX((box.maxCol + 1) * TILE_SIZE) - left;
-        const top = project.toScreenY(box.minRow * TILE_SIZE) + SIGN_TOP_OFFSET_PX;
-        const checks = room.pr?.checks ? CHECKS[room.pr.checks] : null;
-        const stage = roomStage(room, { sessions, officeState, needIds, busyIds });
-        const fieldValues = Object.values(room.fields);
+        const floorTop = project.toScreenY(box.minRow * TILE_SIZE);
+        const height = project.toScreenY((box.maxRow + 1) * TILE_SIZE) - floorTop;
+        const item = itemByRoom.get(room.label);
+        const state = item?.view.state ?? null;
+        const color = state ? STATE_COLOR[state] : 'var(--color-ink-faint)';
+        const checks = room.pr?.checks ? CHECKS_ICON[room.pr.checks] : undefined;
+        const isSelected = selected !== undefined && selected.room === room.label;
+        const releasing = busy === room.label;
         return (
-          <div
-            key={room.label}
-            className="absolute flex justify-center pointer-events-none"
-            style={{ left, top, width, zIndex: SIGN_Z_INDEX }}
-            data-testid="room-sign"
-          >
-            <div className="pixel-panel px-8 pt-2 pb-4 flex flex-col gap-2 max-w-full overflow-hidden">
-              <div className="flex items-center gap-8 whitespace-nowrap text-2xs leading-none">
-                {stage && (
-                  <span className={`font-bold ${stage.tone}`} data-testid="room-stage">
-                    {stage.text}
-                  </span>
-                )}
-                {room.pr ? (
-                  <a
-                    href={room.pr.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={room.pr.title}
-                    className={`pointer-events-auto no-underline hover:underline ${pullRequestTone(room)}`}
-                  >
-                    {pullRequestText(room)}
-                  </a>
-                ) : (
-                  <span className={pullRequestTone(room)}>{pullRequestText(room)}</span>
-                )}
-                {checks && <span className={checks.tone}>{checks.text}</span>}
-                {fieldValues.map((value) => (
-                  <span key={value} className="text-warning">
-                    {value}
-                  </span>
-                ))}
-                {room.port !== null &&
-                  (room.devUrl && room.serverUp ? (
-                    <a
-                      href={room.devUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="pointer-events-auto no-underline hover:underline text-status-success"
-                    >
-                      :{room.port}
-                    </a>
-                  ) : (
-                    <span className={room.serverUp ? 'text-status-success' : 'text-text-muted'}>
-                      :{room.port}
-                    </span>
-                  ))}
-              </div>
-              {(room.branch !== null || room.serverUp) && (
-                <div className="flex items-center gap-8 text-2xs leading-none">
-                  <span className="flex-1 min-w-0 text-text-muted overflow-hidden text-ellipsis whitespace-nowrap">
-                    {room.branch ?? 'dev server running'}
-                  </span>
-                  <button
-                    type="button"
-                    disabled={busy !== null}
-                    onClick={() => requestRelease(room.label)}
-                    title={`Release ${room.label}`}
-                    className="pointer-events-auto shrink-0 bg-transparent border-0 p-0 text-2xs leading-none text-accent-bright hover:text-accent cursor-pointer disabled:opacity-(--btn-disabled-opacity) disabled:cursor-default"
-                    data-testid="room-release"
-                  >
-                    {busy === room.label ? 'releasing' : 'release'}
-                  </button>
+          <div key={room.label}>
+            {item && (
+              <div
+                className={`absolute pointer-events-none rounded-[3px] ${state === 'attention' ? 'room-frame-attention' : ''}`}
+                style={{
+                  left,
+                  top: floorTop,
+                  width,
+                  height,
+                  boxShadow: `inset 0 0 0 ${isSelected ? 3 : 2}px ${color}`,
+                  zIndex: FRAME_Z_INDEX,
+                }}
+                data-testid="room-frame"
+                data-state={state ?? 'free'}
+              />
+            )}
+            <div
+              className="absolute flex justify-center pointer-events-none"
+              style={{ left, top: floorTop + SIGN_TOP_OFFSET_PX, width, zIndex: SIGN_Z_INDEX }}
+              data-testid="room-sign"
+              data-state={state ?? 'free'}
+            >
+              <button
+                type="button"
+                disabled={!item}
+                onClick={() => item && selectTarget(targetOf(item))}
+                className="ui-surface room-sign pointer-events-auto min-w-0 max-w-[calc(100%-12px)] rounded-[8px] border bg-surface/90 px-10 py-6 text-left cursor-pointer disabled:cursor-default"
+                style={{
+                  borderColor: color,
+                  boxShadow: isSelected ? `0 0 0 2px ${color}` : undefined,
+                }}
+                title={item ? 'Open this task' : undefined}
+              >
+                <div className="text-ui-sm font-semibold text-ink truncate">
+                  {item?.title ?? room.label}
                 </div>
-              )}
+                <div className="flex items-center gap-6 mt-2 text-ui-xs whitespace-nowrap">
+                  {item && state ? (
+                    <>
+                      <span
+                        className="w-[7px] h-[7px] rounded-full shrink-0"
+                        style={{ background: color }}
+                      />
+                      <span
+                        className="font-semibold truncate"
+                        style={{ color }}
+                        data-testid="room-stage"
+                      >
+                        {releasing
+                          ? 'Releasing'
+                          : `${STATE_LABEL[state]}${item.view.detail ? ` · ${item.view.detail}` : ''}`}
+                      </span>
+                    </>
+                  ) : (
+                    <span className="text-ink-faint" data-testid="room-stage">
+                      free{room.port !== null ? ` · :${room.port}` : ''}
+                    </span>
+                  )}
+                  {room.pr && (
+                    <span className="ml-auto pl-6 inline-flex items-center gap-3 text-ink-muted shrink-0">
+                      #{room.pr.number}
+                      {checks && (
+                        <span
+                          className="material-symbols-sharp text-[14px]"
+                          style={{ color: checks.color }}
+                          title={checks.title}
+                          aria-label={checks.title}
+                        >
+                          {checks.icon}
+                        </span>
+                      )}
+                    </span>
+                  )}
+                </div>
+              </button>
             </div>
           </div>
         );
