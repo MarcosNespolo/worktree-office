@@ -6,7 +6,7 @@ worktree-office is a fork of [Pixel Agents](https://github.com/pixel-agents-hq/p
 
 > Status: early development. Expect breaking changes.
 
-![The demo office: one room per worktree with door signs and agents at work](docs/images/office.jpg)
+![The demo office: the task list on the left, rooms colored by state in the middle, and the task panel with a conversation on the right](docs/images/office.jpg)
 
 ## Why
 
@@ -90,9 +90,13 @@ A session that is not working shows the title Claude Code gave it, or the one se
 
 ### Door signs and the task list
 
-Each room shows a sign with its branch and the pull request of that branch: number, review state and checks. A free room only says "free", with its dev server port when it has one.
+Each room shows a sign with the title of its task and its state, plus the number of its pull request and an icon for its checks. Click a sign to open the task. A free room only says "free", with its dev server port when it has one.
 
-The sign also says what the room is doing, judged from the tool calls of its most recent session: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading, **working** otherwise. A session waiting on you shows **needs you**, one with no message for ten minutes shows how long it has been idle, and a merged pull request with nobody around shows **done**. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the sign does not flicker. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+Every room takes the color of its state, on its floor, on its frame and on its sign: amber when it needs you, blue while it works, green when it is ready, gray when it is idle, red when it failed. A room that needs you has a frame that breathes, so it catches the eye. The lobby floor stays dark and quiet, so the rooms stand out.
+
+While a session works, its state says what it is doing, judged from its tool calls: **planning** in plan mode, **coding** while editing files, **testing** while running test commands or a browser, **reviewing** while a review sub-agent runs, **reading** while only reading. Reads and plain commands do not override coding, testing or reviewing for three minutes, so the state does not flicker. A session with no message for ten minutes shows how long it has been idle instead. Pull requests come from the [GitHub CLI](https://cli.github.com/), so install it and run `gh auth login` once.
+
+Character labels show the session title and its state. Hover over a character, or select it, to see the tool it is using.
 
 The task list on the left groups everything by state:
 
