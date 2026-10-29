@@ -56,6 +56,12 @@ export const RELEASE_LOG_FILE_NAME = 'release.log';
 export const RELEASE_MAX_LISTED_FILES = 20;
 export const RELEASE_COMMAND_OUTPUT_LINES = 3;
 export const RELEASE_COMMAND_OUTPUT_MAX = 300;
+export const MEMORY_POLL_MS = 20_000;
+export const MEMORY_SAMPLE_TIMEOUT_MS = 15_000;
+export const MEMORY_START_TOLERANCE_MS = 2_000;
+export const MEMORY_SAMPLE_END = '__worktree_office_sample_end__';
+export const CLAUDE_SESSIONS_DIR_NAME = 'sessions';
+export const FILETIME_EPOCH_OFFSET_MS = 11_644_473_600_000;
 export const ROOMS_MAX = 24;
 export const ROOMS_MAX_COLUMNS = 6;
 

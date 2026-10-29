@@ -11,6 +11,7 @@ import {
   SESSION_LAST_TEXT_MAX,
   SESSION_PR_LINKS_MAX,
 } from './constants.js';
+import type { MemoryReader } from './memory.js';
 import { applyStage, classifyTool, type SessionStage, type StageState } from './stages.js';
 import { transcriptOrigin } from './transcript.js';
 
@@ -23,6 +24,7 @@ export interface SessionInfo {
   app: string | null;
   stage: SessionStage | null;
   stageAt: number | null;
+  memoryBytes: number | null;
 }
 
 export interface SessionsSnapshot {
@@ -34,6 +36,7 @@ export interface SessionInfoDeps {
   store: AgentStateStore;
   activity: SessionActivity;
   stagesFor: (file: string) => StagesConfig;
+  memory?: MemoryReader;
 }
 
 interface FileState extends StageState {
@@ -160,6 +163,7 @@ export class SessionInfoTracker {
         app: this.appOf(agent.jsonlFile),
         stage: state?.stage ?? null,
         stageAt: state?.stageAt ?? null,
+        memoryBytes: this.deps.memory?.forSession(agent.id) ?? null,
       });
     }
     for (const file of [...this.files.keys()]) {

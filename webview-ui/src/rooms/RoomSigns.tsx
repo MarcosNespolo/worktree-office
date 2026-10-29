@@ -4,6 +4,7 @@ import { TILE_SIZE } from '../constants.js';
 import type { OfficeState } from '../office/engine/officeState.js';
 import { overlayProjection } from '../office/projection.js';
 import type { ColorValue, ToolActivity } from '../office/types.js';
+import { shownBytes } from './memory.js';
 import { useReleaseState } from './releaseStore.js';
 import { areaBounds } from './roomGeometry.js';
 import { useRoomsState } from './roomsStore.js';
@@ -139,6 +140,7 @@ export function RoomSigns({
         const checks = room.pr?.checks ? CHECKS_ICON[room.pr.checks] : undefined;
         const isSelected = selected !== undefined && selected.room === room.label;
         const releasing = busy === room.label;
+        const memory = shownBytes(room.memoryBytes);
         return (
           <div key={room.label}>
             {item && (
@@ -198,17 +200,26 @@ export function RoomSigns({
                       free{room.port !== null ? ` · :${room.port}` : ''}
                     </span>
                   )}
-                  {room.pr && (
-                    <span className="ml-auto pl-6 inline-flex items-center gap-3 text-ink-muted shrink-0">
-                      #{room.pr.number}
-                      {checks && (
-                        <span
-                          className="material-symbols-sharp text-[14px]"
-                          style={{ color: checks.color }}
-                          title={checks.title}
-                          aria-label={checks.title}
-                        >
-                          {checks.icon}
+                  {(room.pr || memory) && (
+                    <span className="ml-auto pl-6 inline-flex items-center gap-6 text-ink-muted shrink-0">
+                      {memory && (
+                        <span title="RAM in use" data-testid="room-memory">
+                          {memory}
+                        </span>
+                      )}
+                      {room.pr && (
+                        <span className="inline-flex items-center gap-3">
+                          #{room.pr.number}
+                          {checks && (
+                            <span
+                              className="material-symbols-sharp text-[14px]"
+                              style={{ color: checks.color }}
+                              title={checks.title}
+                              aria-label={checks.title}
+                            >
+                              {checks.icon}
+                            </span>
+                          )}
                         </span>
                       )}
                     </span>

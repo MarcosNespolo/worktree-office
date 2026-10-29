@@ -46,6 +46,7 @@ import { SessionFollower } from './rooms/follow.js';
 import { ghPullRequests } from './rooms/github.js';
 import { registerImageRoute } from './rooms/images.js';
 import { RoomsManager } from './rooms/manager.js';
+import { MemoryTracker } from './rooms/memory.js';
 import { remoteControlName } from './rooms/remoteName.js';
 import { openSessionTerminal, type ReplyDeps, replyToSession } from './rooms/reply.js';
 import { SessionInfoTracker } from './rooms/sessionInfo.js';
@@ -451,11 +452,13 @@ async function main(): Promise<void> {
     const rooms = new RoomsManager(store, roomsConfig.projects);
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
     const follower = new SessionFollower(store, rooms);
+    const memory = new MemoryTracker(store, rooms);
     const status = new StatusTracker(
       store,
       rooms,
       roomsConfig.projects,
       demo ? demoPullRequests : ghPullRequests,
+      memory,
     );
     rooms.setOccupancy((room) => follower.workingIn(room.path) || status.serverUpAt(room));
     followSession = (event) => follower.observe(event);
@@ -470,6 +473,7 @@ async function main(): Promise<void> {
     const sessionInfo = new SessionInfoTracker({
       store,
       activity,
+      memory,
       stagesFor: (file) => {
         const room = rooms.roomFor(transcriptCwd(file));
         const project = room ? rooms.projectOf(room) : roomsConfig.projects[0];
@@ -479,6 +483,7 @@ async function main(): Promise<void> {
     await rooms.start();
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
     await status.start();
+    memory.start();
     const tasks = new TaskRunner({
       store,
       runtime,
@@ -567,6 +572,7 @@ async function main(): Promise<void> {
       sessionInfo.stop();
       tasks.stop();
       status.stop();
+      memory.stop();
       rooms.stop();
       runtime.dispose();
       server.stop();

@@ -19,6 +19,7 @@ import {
   type ReviewState,
 } from './github.js';
 import type { RoomsManager } from './manager.js';
+import { type MachineMemory, type MemoryReader, NO_MEMORY } from './memory.js';
 import { isReleasable } from './release.js';
 import type { Room } from './rooms.js';
 
@@ -42,6 +43,7 @@ export interface RoomInfo {
   devUrl: string | null;
   serverUp: boolean;
   releasable: boolean;
+  memoryBytes: number | null;
 }
 
 export type RoomNeedKind =
@@ -71,6 +73,7 @@ export interface RoomsSnapshot {
   github: GithubState;
   rooms: RoomInfo[];
   needs: RoomNeed[];
+  memory: MachineMemory | null;
 }
 
 export function portFor(room: Room, project: ProjectConfig | undefined): number | null {
@@ -199,6 +202,7 @@ export class StatusTracker {
     private readonly rooms: RoomsManager,
     private readonly projects: readonly ProjectConfig[],
     private readonly source: PullRequestSource = ghPullRequests,
+    private readonly memory: MemoryReader = NO_MEMORY,
   ) {}
 
   async start(): Promise<void> {
@@ -237,7 +241,7 @@ export class StatusTracker {
         this.projects.find((p) => p.name === info.project),
       ),
     );
-    return { type: 'roomsState', github: this.github, rooms, needs };
+    return { type: 'roomsState', github: this.github, rooms, needs, memory: this.memory.machine() };
   }
 
   private every(ms: number, task: () => Promise<void>): void {
@@ -271,6 +275,7 @@ export class StatusTracker {
           : null,
       serverUp: port !== null && this.serverUp.get(port) === true,
       releasable: project ? isReleasable(room, project) : false,
+      memoryBytes: this.memory.forRoom(room.label),
     };
   }
 
