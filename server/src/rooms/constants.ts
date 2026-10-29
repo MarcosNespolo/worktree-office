@@ -62,6 +62,18 @@ export const MEMORY_START_TOLERANCE_MS = 2_000;
 export const MEMORY_SAMPLE_END = '__worktree_office_sample_end__';
 export const CLAUDE_SESSIONS_DIR_NAME = 'sessions';
 export const FILETIME_EPOCH_OFFSET_MS = 11_644_473_600_000;
+export const DISK_SCAN_INTERVAL_MS = 30 * 60_000;
+export const DISK_FIRST_SCAN_DELAY_MS = 2 * 60_000;
+export const DISK_DRIVES_POLL_MS = 60_000;
+export const DISK_SCAN_TIMEOUT_MS = 20 * 60_000;
+export const DISK_BUILD_FOLDERS: readonly string[] = [
+  '.next',
+  '.turbo',
+  '.nuxt',
+  '.svelte-kit',
+  '.parcel-cache',
+  '.angular',
+];
 export const ROOMS_MAX = 24;
 export const ROOMS_MAX_COLUMNS = 6;
 
