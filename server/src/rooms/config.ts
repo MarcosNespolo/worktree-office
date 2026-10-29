@@ -40,6 +40,7 @@ export interface ReleaseConfig {
   mode: 'detach' | 'remove';
   keep: string[];
   before: string[];
+  rooms: string[];
 }
 
 export interface LaunchConfig {
@@ -254,6 +255,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
       mode: objectOf(obj.release).mode === 'remove' ? 'remove' : 'detach',
       keep: stringList(objectOf(obj.release).keep),
       before: stringList(objectOf(obj.release).before),
+      rooms: stringList(objectOf(obj.release).rooms),
     },
     launch: {
       prompt:

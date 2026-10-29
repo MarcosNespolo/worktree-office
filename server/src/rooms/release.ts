@@ -5,6 +5,7 @@ import * as path from 'path';
 
 import type { AgentStateStore } from '../agentStateStore.js';
 import { LAYOUT_FILE_DIR } from '../constants.js';
+import type { ProjectConfig } from './config.js';
 import {
   RELEASE_COMMAND_TIMEOUT_MS,
   RELEASE_LOG_FILE_NAME,
@@ -14,8 +15,14 @@ import {
 import { git, runCommand } from './git.js';
 import { globToRegExp, matchesAny } from './glob.js';
 import type { RoomsManager } from './manager.js';
-import { samePath } from './rooms.js';
+import { type Room, samePath } from './rooms.js';
 import type { StatusTracker } from './status.js';
+
+export function isReleasable(room: Room, project: ProjectConfig): boolean {
+  if (samePath(room.path, project.root)) return false;
+  const rooms = project.release.rooms.map(globToRegExp);
+  return rooms.length === 0 || matchesAny(room.path, rooms);
+}
 
 export type ReleaseNeed = 'open-pr' | 'agents' | 'dirty';
 
@@ -151,6 +158,9 @@ export async function releaseRoom(
   if (!project) return result(room.label, false, `Room ${room.label} has no project.`);
   if (samePath(room.path, project.root)) {
     return result(room.label, false, 'The main checkout is never released.');
+  }
+  if (!isReleasable(room, project)) {
+    return result(room.label, false, `${room.label} is not released from the office.`);
   }
 
   const info = deps.status.infoFor(room.label);

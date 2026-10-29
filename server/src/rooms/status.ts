@@ -19,6 +19,7 @@ import {
   type ReviewState,
 } from './github.js';
 import type { RoomsManager } from './manager.js';
+import { isReleasable } from './release.js';
 import type { Room } from './rooms.js';
 
 export interface RoomPullRequest {
@@ -40,6 +41,7 @@ export interface RoomInfo {
   port: number | null;
   devUrl: string | null;
   serverUp: boolean;
+  releasable: boolean;
 }
 
 export type RoomNeedKind =
@@ -268,6 +270,7 @@ export class StatusTracker {
           ? project.devServer.url.replace('{port}', String(port))
           : null,
       serverUp: port !== null && this.serverUp.get(port) === true,
+      releasable: project ? isReleasable(room, project) : false,
     };
   }
 
