@@ -29,6 +29,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] One-click release of a worktree: stop its dev server, stash leftovers, then detach or remove it
 - [x] A task box that starts new tasks in free worktrees, with a limit on how many run at once
 - [x] Tokens used by each task
+- [x] RAM used by each room and each session, and the free memory of the computer
 - [x] Session titles and idle time on the character labels
 - [x] System notifications when something new needs you
 - [x] Demo mode with a fictional project
@@ -132,6 +133,17 @@ These project fields tune the signs and the panel:
 | `fields`    | Extra values read from each pull request, for example `{ "name": "stage", "pattern": "^stage:(.+)$", "from": "labels" }`. `from` is `body` (default) or `labels`, and the first capture group is the value. Only open and draft pull requests have fields.            |
 | `needsYou`  | Rules that turn a field into a reason on the task list, for example `{ "field": "stage", "values": ["qa"], "title": "Ready for your QA", "state": "ready" }`. `state` is `attention` (default), `ready` or `idle`.                                                    |
 | `stages`    | Patterns that decide **testing** and **reviewing**, for example `{ "testing": "pytest\|tox", "reviewing": "review\|audit" }`. `testing` is matched against shell commands, `reviewing` against sub-agent descriptions and prompts; each replaces the default pattern. |
+
+### Memory
+
+Every 20 seconds the office reads the processes of the computer and shows the RAM they use:
+
+- the top of the task list shows the memory of the computer, in amber when less than a tenth is free;
+- each row and each door sign shows what its room uses: the sessions working there, with every process they started, such as shells, MCP servers and dev servers, plus any other process started from the room's folder, such as a dev server left running;
+- a row in the lobby shows what its session uses;
+- the task panel shows the figure of the room, with the session's own in its tooltip.
+
+Each process counts once. It belongs to the session that started it, or else to the room its command line points into. Sub-agents run inside their session, so they count there. The figure is the working set the system reports, so memory shared between processes counts in each of them. On Windows the office reads the processes through one PowerShell kept open, which uses about 100 MB; on macOS and Linux it runs `ps`.
 
 ### Releasing a worktree
 
