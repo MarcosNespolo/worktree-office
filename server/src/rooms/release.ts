@@ -7,6 +7,8 @@ import type { AgentStateStore } from '../agentStateStore.js';
 import { LAYOUT_FILE_DIR } from '../constants.js';
 import type { ProjectConfig } from './config.js';
 import {
+  RELEASE_COMMAND_OUTPUT_LINES,
+  RELEASE_COMMAND_OUTPUT_MAX,
   RELEASE_COMMAND_TIMEOUT_MS,
   RELEASE_LOG_FILE_NAME,
   RELEASE_MAX_LISTED_FILES,
@@ -17,6 +19,24 @@ import { globToRegExp, matchesAny } from './glob.js';
 import type { RoomsManager } from './manager.js';
 import { type Room, samePath } from './rooms.js';
 import type { StatusTracker } from './status.js';
+
+function fillCommand(command: string, room: Room, port: number | null): string {
+  return command
+    .replaceAll('{label}', room.label)
+    .replaceAll('{path}', room.path)
+    .replaceAll('{branch}', room.branch ?? '')
+    .replaceAll('{port}', port === null ? '' : String(port));
+}
+
+function lastLines(output: string): string {
+  return output
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .slice(-RELEASE_COMMAND_OUTPUT_LINES)
+    .join(' · ')
+    .slice(0, RELEASE_COMMAND_OUTPUT_MAX);
+}
 
 export function isReleasable(room: Room, project: ProjectConfig): boolean {
   if (samePath(room.path, project.root)) return false;
@@ -195,6 +215,22 @@ export async function releaseRoom(
         `"${command}" failed in ${room.label}: ${run.output.slice(0, 300)}`,
       );
     }
+  }
+
+  if (project.release.command) {
+    for (const agent of launched) deps.closeAgent(agent.id);
+    const run = await runShell(
+      fillCommand(project.release.command, room, info?.port ?? null),
+      room.path,
+    );
+    const detail = lastLines(run.output);
+    const message = run.ok
+      ? `Released ${room.label}${detail ? `: ${detail}` : '.'}`
+      : `${room.label} was not released${detail ? `: ${detail}` : '.'}`;
+    if (run.ok) logRelease(message);
+    await deps.rooms.refresh();
+    await deps.status.refreshNow();
+    return result(room.label, run.ok, message);
   }
 
   const status = await git(['-C', room.path, 'status', '--porcelain']);

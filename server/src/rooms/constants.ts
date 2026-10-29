@@ -54,6 +54,8 @@ export const RELEASE_COMMAND_TIMEOUT_MS = 60_000;
 export const RELEASE_REMOVE_TIMEOUT_MS = 10 * 60_000;
 export const RELEASE_LOG_FILE_NAME = 'release.log';
 export const RELEASE_MAX_LISTED_FILES = 20;
+export const RELEASE_COMMAND_OUTPUT_LINES = 3;
+export const RELEASE_COMMAND_OUTPUT_MAX = 300;
 export const ROOMS_MAX = 24;
 export const ROOMS_MAX_COLUMNS = 6;
 

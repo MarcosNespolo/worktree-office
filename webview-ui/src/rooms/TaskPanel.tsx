@@ -237,7 +237,7 @@ export function TaskPanel({
             size="sm"
             variant="ghost"
             onClick={() => requestRelease(room.label)}
-            title="Stop the dev server, stash leftovers and free this worktree"
+            title="Free this worktree for the next task"
             data-testid="panel-release"
           >
             Release
