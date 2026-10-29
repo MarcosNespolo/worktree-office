@@ -7,6 +7,7 @@ import type { ToolActivity } from '../office/types.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
 import { closeConversation } from './conversationStore.js';
 import { ConversationView } from './ConversationView.js';
+import { panelMemory } from './memory.js';
 import { NoSessionView } from './NoSessionView.js';
 import { requestRelease } from './releaseStore.js';
 import { terminalHint } from './replyHint.js';
@@ -133,6 +134,7 @@ export function TaskPanel({
       ? item.view
       : sessionStateView(session, need?.kind ?? null, busy, character?.isActive);
   const checks = room?.pr?.checks ? CHECKS_ICON[room.pr.checks] : undefined;
+  const memory = panelMemory(room, session);
   const title =
     (room?.pr && cleanTitle(room.pr.title)) ||
     session?.title ||
@@ -198,6 +200,18 @@ export function TaskPanel({
                   </span>
                 )}
               </a>
+            )}
+            {memory && (
+              <span
+                className="inline-flex items-center gap-4 text-ink-muted"
+                title={memory.title}
+                data-testid="panel-memory"
+              >
+                <span className="material-symbols-sharp text-[15px]" aria-hidden="true">
+                  memory
+                </span>
+                {memory.text}
+              </span>
             )}
             {!present && agentId !== null && (
               <span className="text-ink-faint">no longer in the office</span>

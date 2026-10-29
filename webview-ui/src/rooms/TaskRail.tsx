@@ -2,8 +2,10 @@ import { type KeyboardEvent, useState } from 'react';
 
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
+import { itemMemory, machineSummary } from './memory.js';
 import { useRoomsState } from './roomsStore.js';
 import { selectTarget, useSelection } from './selectionStore.js';
+import { useSessionsInfo } from './sessionsStore.js';
 import { useTasksState } from './tasksStore.js';
 import { IconButton } from './ui.js';
 import { type NotifyState, useNeedNotifications } from './useNeedNotifications.js';
@@ -77,7 +79,9 @@ export function TaskRail({
     agentAwaitingInput,
     agentTools,
   );
-  const { github } = useRoomsState();
+  const { github, rooms, memory } = useRoomsState();
+  const sessions = useSessionsInfo();
+  const machine = machineSummary(memory);
   const { maxActive, active, splitting, freeRooms } = useTasksState();
   const selection = useSelection();
   const [collapsed, setCollapsed] = useState(false);
@@ -183,6 +187,15 @@ export function TaskRail({
         >
           {capacity}
         </div>
+        {machine && (
+          <div
+            className={`text-ui-xs mt-2 truncate ${machine.low ? 'text-state-attention' : 'text-ink-muted'}`}
+            title="Memory of this computer, as the system reports it"
+            data-testid="machine-memory"
+          >
+            {machine.text}
+          </div>
+        )}
       </div>
       <div
         className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-8 py-8 outline-none"
@@ -204,6 +217,7 @@ export function TaskRail({
             {group.items.map((item) => {
               const color = STATE_COLOR[item.view.state];
               const isSelected = selected?.key === item.key;
+              const bytes = itemMemory(item, rooms, sessions);
               return (
                 <button
                   key={item.key}
@@ -228,11 +242,22 @@ export function TaskRail({
                       </span>
                       <span className="shrink-0 text-ui-2xs text-ink-faint">{ago(item.at)}</span>
                     </span>
-                    <span className="block truncate text-ui-xs text-ink-muted mt-2">
-                      {item.view.detail && <span style={{ color }}>{item.view.detail}</span>}
-                      {item.view.detail ? ' · ' : ''}
-                      {item.room ?? 'lobby'}
-                      {item.pr ? ` · #${item.pr.number}` : ''}
+                    <span className="flex items-baseline gap-8 text-ui-xs text-ink-muted mt-2">
+                      <span className="flex-1 truncate">
+                        {item.view.detail && <span style={{ color }}>{item.view.detail}</span>}
+                        {item.view.detail ? ' · ' : ''}
+                        {item.room ?? 'lobby'}
+                        {item.pr ? ` · #${item.pr.number}` : ''}
+                      </span>
+                      {bytes && (
+                        <span
+                          className="shrink-0 text-ui-2xs text-ink-faint"
+                          title="RAM in use"
+                          data-testid="rail-memory"
+                        >
+                          {bytes}
+                        </span>
+                      )}
                     </span>
                   </span>
                 </button>
