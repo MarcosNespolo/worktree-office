@@ -20,6 +20,7 @@ interface ConversationViewProps {
   inOffice: boolean;
   needsApproval: boolean;
   full: boolean;
+  canReply: boolean;
 }
 
 function timeOf(at: number | null): string {
@@ -37,6 +38,7 @@ export function ConversationView({
   inOffice,
   needsApproval,
   full,
+  canReply,
 }: ConversationViewProps) {
   const conversation = useConversation();
   const sessions = useSessionsInfo();
@@ -139,12 +141,20 @@ export function ConversationView({
               This session waits for a permission answer in the app it runs in.
             </div>
           )}
-          <ReplyBox
-            agentId={agentId}
-            hint={replyHint(session, inOffice)}
-            images={!needsApproval}
-            multiline
-          />
+          {canReply ? (
+            <ReplyBox
+              agentId={agentId}
+              hint={replyHint(session, inOffice)}
+              images={!needsApproval}
+              multiline
+            />
+          ) : (
+            !needsApproval && (
+              <div className="text-ui-sm text-ink-faint" data-testid="conversation-watch-only">
+                This office only watches. Reply in the app the session runs in.
+              </div>
+            )
+          )}
         </div>
       </div>
     </>

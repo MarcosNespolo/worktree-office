@@ -73,7 +73,8 @@ export function TaskPanel({
   const { rooms } = useRoomsState();
   const { tasks } = useTasksState();
   const { result, sentTo } = useReplyState();
-  const { agentId, tab, open, full } = selection;
+  const { agentId, open, full } = selection;
+  const tab: PanelTab = terminalsAvailable ? selection.tab : 'conversation';
 
   useEffect(() => {
     if (!result?.ok || sentTo === null || sentTo !== agentId || result.agentId === agentId) return;
@@ -212,7 +213,7 @@ export function TaskPanel({
         <IconButton icon="close" label="Close" onClick={closePanel} data-testid="panel-close" />
       </div>
       <div className="flex items-center gap-2 px-12 border-b border-line">
-        {TABS.map((entry) => (
+        {TABS.filter((entry) => terminalsAvailable || entry.id !== 'terminal').map((entry) => (
           <button
             key={entry.id}
             type="button"
@@ -254,6 +255,7 @@ export function TaskPanel({
               inOffice={inOffice}
               needsApproval={need?.kind === 'approval'}
               full={full}
+              canReply={terminalsAvailable}
             />
           ) : (
             <NoSessionView task={task} prUrl={room?.pr?.url ?? null} />

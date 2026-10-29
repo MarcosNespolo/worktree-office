@@ -59,7 +59,7 @@ interface TaskRailProps {
   agentStatuses: Record<number, string>;
   agentAwaitingInput: Record<number, boolean>;
   agentTools: Record<number, ToolActivity[]>;
-  onNewTask: () => void;
+  onNewTask?: () => void;
 }
 
 export function TaskRail({
@@ -162,17 +162,19 @@ export function TaskRail({
             label="Hide tasks"
             onClick={() => setCollapsed(true)}
           />
-          <button
-            type="button"
-            onClick={onNewTask}
-            className="ui-btn ui-btn-sm ui-btn-primary ml-4"
-            data-testid="new-task"
-          >
-            <span className="material-symbols-sharp text-[16px]" aria-hidden="true">
-              add
-            </span>
-            New
-          </button>
+          {onNewTask && (
+            <button
+              type="button"
+              onClick={onNewTask}
+              className="ui-btn ui-btn-sm ui-btn-primary ml-4"
+              data-testid="new-task"
+            >
+              <span className="material-symbols-sharp text-[16px]" aria-hidden="true">
+                add
+              </span>
+              New
+            </button>
+          )}
         </div>
         <div
           className="text-ui-xs text-ink-muted mt-6 truncate"

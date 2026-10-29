@@ -151,6 +151,8 @@ Every release is logged in `~/.worktree-office/release.log`. The main checkout i
 
 ### Starting tasks
 
+To only watch, start the office with `--no-terminal`. **New**, the reply box and the terminals go away, and the office keeps following the sessions you run in your editor or terminal: their rooms, stages, conversations and pull requests. Releasing a worktree still works.
+
 Click **New** at the top of the task list, describe one or more tasks and press **Start** (or Ctrl+Enter). The line under the list title says how many tasks are running and which worktrees are free. Separate tasks with a blank line, or write them as a list. Each task:
 
 1. waits until fewer than `maxActive` tasks are running;

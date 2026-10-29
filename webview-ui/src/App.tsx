@@ -743,7 +743,7 @@ function App() {
               agentStatuses={agentStatuses}
               agentAwaitingInput={agentAwaitingInput}
               agentTools={agentTools}
-              onNewTask={() => setIsNewTaskOpen(true)}
+              onNewTask={terminalAvailable ? () => setIsNewTaskOpen(true) : undefined}
             />
           )}
           {officeRegion}
