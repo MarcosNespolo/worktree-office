@@ -48,7 +48,7 @@ node dist/cli.js --port 3100
 
 Want to look around first? `node dist/cli.js --demo` opens a fictional project with six worktrees, simulated agents and fictional pull requests. It runs in a temporary folder and never touches your hooks, sessions or settings.
 
-Open the URL printed in the terminal. It carries an access token, so treat it like a password.
+Open the URL printed in the terminal. It carries an access token, so treat it like a password. The office in the browser is silent: it plays no chime when a session finishes or asks for permission.
 
 On first run, the office asks for permission to add hooks to `~/.claude/settings.json`, so it can follow your sessions as they happen. You can remove them anytime from Settings.
 
