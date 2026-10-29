@@ -2,7 +2,13 @@ import { useSyncExternalStore } from 'react';
 
 import type { RoomsState } from '../../../core/src/messages.js';
 
-const EMPTY: RoomsState = { type: 'roomsState', github: 'off', rooms: [], needs: [] };
+const EMPTY: RoomsState = {
+  type: 'roomsState',
+  github: 'off',
+  rooms: [],
+  needs: [],
+  memory: null,
+};
 
 let current: RoomsState = EMPTY;
 let currentJson = JSON.stringify(EMPTY);

@@ -250,12 +250,17 @@ components:
       description: State of every worktree room, sent when it changes and every few seconds, plus the items that need the user.
       type: object
       additionalProperties: false
-      required: [type, github, rooms, needs]
+      required: [type, github, rooms, needs, memory]
       properties:
         type:
           const: roomsState
         github:
           $ref: '#/components/schemas/RoomsGithubState'
+        memory:
+          oneOf:
+            - $ref: '#/components/schemas/MachineMemory'
+            - type: 'null'
+          description: RAM of the machine the office runs on, read with the processes. Null until the first reading.
         rooms:
           type: array
           items:
@@ -269,7 +274,8 @@ components:
       description: One git worktree shown as a room.
       type: object
       additionalProperties: false
-      required: [label, project, path, branch, pr, fields, port, devUrl, serverUp, releasable]
+      required:
+        [label, project, path, branch, pr, fields, port, devUrl, serverUp, releasable, memoryBytes]
       properties:
         label:
           type: string
@@ -297,6 +303,21 @@ components:
         releasable:
           type: boolean
           description: Whether the office may release this worktree. Never the main checkout, and only rooms matching release.rooms when it is set.
+        memoryBytes:
+          type: [integer, 'null']
+          description: RAM used by the sessions working here and by the other processes started from this folder, in bytes. Null when the processes could not be read.
+
+    MachineMemory:
+      description: Physical memory of the machine.
+      type: object
+      additionalProperties: false
+      required: [totalBytes, freeBytes]
+      properties:
+        totalBytes:
+          type: integer
+        freeBytes:
+          type: integer
+          description: Memory available to new work, as the operating system reports it.
 
     RoomPullRequest:
       description: The pull request of a room's branch.
@@ -599,7 +620,7 @@ components:
       description: Title, last activity and last message of one session.
       type: object
       additionalProperties: false
-      required: [id, title, lastActivityAt, lastText, prNumbers, app, stage, stageAt]
+      required: [id, title, lastActivityAt, lastText, prNumbers, app, stage, stageAt, memoryBytes]
       properties:
         id:
           type: integer
@@ -629,6 +650,9 @@ components:
         stageAt:
           type: [integer, 'null']
           description: Epoch milliseconds of the tool call that set the stage.
+        memoryBytes:
+          type: [integer, 'null']
+          description: RAM used by the session's process and every process it started, sub-agents included, in bytes. Null when its process was not found.
 
     SessionStage:
       description: Kind of work a session is doing, judged from its tool calls.

@@ -400,11 +400,17 @@ export interface AgentDiagnostics {
 export interface RoomsState {
   type: 'roomsState';
   github: RoomsGithubState;
+  memory: MachineMemory | null;
   rooms: RoomInfo[];
   needs: RoomNeed[];
 }
 
 export type RoomsGithubState = 'ok' | 'unavailable' | 'off';
+
+export interface MachineMemory {
+  totalBytes: number;
+  freeBytes: number;
+}
 
 export interface RoomInfo {
   label: string;
@@ -417,6 +423,7 @@ export interface RoomInfo {
   devUrl: string | null;
   serverUp: boolean;
   releasable: boolean;
+  memoryBytes: number | null;
 }
 
 export interface RoomPullRequest {
@@ -503,6 +510,7 @@ export interface SessionInfo {
   app: string | null;
   stage: SessionStage | null;
   stageAt: number | null;
+  memoryBytes: number | null;
 }
 
 export type SessionStage = 'planning' | 'coding' | 'testing' | 'reviewing' | 'reading' | 'working';
