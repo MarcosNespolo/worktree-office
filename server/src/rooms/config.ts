@@ -41,6 +41,7 @@ export interface ReleaseConfig {
   keep: string[];
   before: string[];
   rooms: string[];
+  command: string | null;
 }
 
 export interface LaunchConfig {
@@ -142,6 +143,10 @@ export function stringList(value: unknown): string[] {
 
 export function resolveUserPath(raw: string): string {
   return path.resolve(expandTilde(raw));
+}
+
+function textOrNull(value: unknown): string | null {
+  return typeof value === 'string' && value.trim() ? value.trim() : null;
 }
 
 function objectOf(value: unknown): Record<string, unknown> {
@@ -256,6 +261,7 @@ export function parseProject(raw: unknown): ProjectConfig | null {
       keep: stringList(objectOf(obj.release).keep),
       before: stringList(objectOf(obj.release).before),
       rooms: stringList(objectOf(obj.release).rooms),
+      command: textOrNull(objectOf(obj.release).command),
     },
     launch: {
       prompt:
