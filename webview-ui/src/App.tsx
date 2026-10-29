@@ -744,6 +744,7 @@ function App() {
               agentAwaitingInput={agentAwaitingInput}
               agentTools={agentTools}
               onNewTask={terminalAvailable ? () => setIsNewTaskOpen(true) : undefined}
+              readOnly={officeReadOnly}
             />
           )}
           {officeRegion}
