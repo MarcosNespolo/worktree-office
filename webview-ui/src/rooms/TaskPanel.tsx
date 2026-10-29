@@ -232,7 +232,7 @@ export function TaskPanel({
           </button>
         ))}
         <div className="flex-1" />
-        {room && (room.branch !== null || room.serverUp) && (
+        {room && room.releasable && (room.branch !== null || room.serverUp) && (
           <UiButton
             size="sm"
             variant="ghost"

@@ -269,7 +269,7 @@ components:
       description: One git worktree shown as a room.
       type: object
       additionalProperties: false
-      required: [label, project, path, branch, pr, fields, port, devUrl, serverUp]
+      required: [label, project, path, branch, pr, fields, port, devUrl, serverUp, releasable]
       properties:
         label:
           type: string
@@ -294,6 +294,9 @@ components:
           type: [string, 'null']
         serverUp:
           type: boolean
+        releasable:
+          type: boolean
+          description: Whether the office may release this worktree. Never the main checkout, and only rooms matching release.rooms when it is set.
 
     RoomPullRequest:
       description: The pull request of a room's branch.

@@ -416,6 +416,7 @@ export interface RoomInfo {
   port: number | null;
   devUrl: string | null;
   serverUp: boolean;
+  releasable: boolean;
 }
 
 export interface RoomPullRequest {
