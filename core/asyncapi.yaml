@@ -135,6 +135,7 @@ components:
         - $ref: '#/components/schemas/SessionsInfo'
         - $ref: '#/components/schemas/ReplyResult'
         - $ref: '#/components/schemas/SessionMessages'
+        - $ref: '#/components/schemas/DiskState'
       discriminator: type
 
     ClientMessage:
@@ -175,6 +176,7 @@ components:
         - $ref: '#/components/schemas/OpenSessionTerminal'
         - $ref: '#/components/schemas/GetSessionMessages'
         - $ref: '#/components/schemas/AnswerPermission'
+        - $ref: '#/components/schemas/MeasureDisk'
       discriminator: type
 
     # ── Server message variants ────────────────────────────────────
@@ -362,6 +364,101 @@ components:
           type: [string, 'null']
         prUrl:
           type: [string, 'null']
+
+    MeasureDisk:
+      description: Measure the size of every worktree and extra folder now, instead of waiting for the next scheduled scan. Ignored while a scan runs.
+      type: object
+      additionalProperties: false
+      required: [type]
+      properties:
+        type:
+          const: measureDisk
+
+    DiskState:
+      description: Free space of the drives the office works on and the size of every worktree, sent when it changes. Worktrees are measured every 30 minutes and on request.
+      type: object
+      additionalProperties: false
+      required: [type, scanning, measuredAt, drives, worktrees, folders]
+      properties:
+        type:
+          const: diskState
+        scanning:
+          type: boolean
+          description: Whether a measurement is running.
+        measuredAt:
+          type: [integer, 'null']
+          description: Epoch milliseconds of the last finished measurement.
+        drives:
+          type: array
+          items:
+            $ref: '#/components/schemas/DriveSpace'
+        worktrees:
+          type: array
+          description: Every worktree of the configured projects, rooms or not, largest first.
+          items:
+            $ref: '#/components/schemas/WorktreeDisk'
+        folders:
+          type: array
+          description: Extra folders listed in disk.folders of the configuration.
+          items:
+            $ref: '#/components/schemas/FolderDisk'
+
+    DriveSpace:
+      description: Space of one drive that holds a worktree, the home folder or an extra folder.
+      type: object
+      additionalProperties: false
+      required: [root, totalBytes, freeBytes]
+      properties:
+        root:
+          type: string
+          description: Root of the drive, such as C:\ or /.
+        totalBytes:
+          type: integer
+        freeBytes:
+          type: integer
+          description: Space available to the user.
+
+    WorktreeDisk:
+      description: Size of one worktree on disk, split by what fills it. Links and nested worktrees are not counted.
+      type: object
+      additionalProperties: false
+      required: [label, project, path, totalBytes, modulesBytes, buildBytes, gitBytes, measuredAt]
+      properties:
+        label:
+          type: string
+        project:
+          type: string
+        path:
+          type: string
+        totalBytes:
+          type: integer
+        modulesBytes:
+          type: integer
+          description: Bytes inside node_modules folders.
+        buildBytes:
+          type: integer
+          description: Bytes inside build output and cache folders, such as .next and .turbo.
+        gitBytes:
+          type: integer
+          description: Bytes inside the .git folder, which only the main checkout has.
+        measuredAt:
+          type: integer
+
+    FolderDisk:
+      description: Size of one extra folder.
+      type: object
+      additionalProperties: false
+      required: [label, path, bytes, measuredAt]
+      properties:
+        label:
+          type: string
+        path:
+          type: string
+        bytes:
+          type: [integer, 'null']
+          description: Null when the folder does not exist.
+        measuredAt:
+          type: integer
 
     ReleaseRoom:
       description: Release a worktree room. Every confirmation the server asked for is sent back as true.

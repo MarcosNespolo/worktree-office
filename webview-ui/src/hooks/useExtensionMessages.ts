@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type {
+  DiskState,
   HooksConsentRequest,
   ReleaseResult,
   ReplyResult,
@@ -28,6 +29,7 @@ import {
 import type { OfficeLayout, ToolActivity } from '../office/types.js';
 import { setWallSprites } from '../office/wallTiles.js';
 import { receiveSessionMessages } from '../rooms/conversationStore.js';
+import { setDiskState } from '../rooms/diskStore.js';
 import { receiveReleaseResult } from '../rooms/releaseStore.js';
 import { receiveReplyResult } from '../rooms/replyStore.js';
 import { setRoomsState } from '../rooms/roomsStore.js';
@@ -432,6 +434,8 @@ export function useExtensionMessages(
         receiveReleaseResult(msg as unknown as ReleaseResult);
       } else if (msg.type === 'roomsState') {
         setRoomsState(msg as unknown as RoomsState);
+      } else if (msg.type === 'diskState') {
+        setDiskState(msg as unknown as DiskState);
       } else if (msg.type === 'agentDirectoryChanged') {
         const directoryName = msg.directoryName as string;
         os.moveAgentToDirectory(msg.id as number, directoryName);

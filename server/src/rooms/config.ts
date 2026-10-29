@@ -89,11 +89,21 @@ export interface SessionsConfig {
   hideAfterIdleMinutes: number;
 }
 
+export interface DiskFolder {
+  label: string;
+  path: string;
+}
+
+export interface DiskConfig {
+  folders: DiskFolder[];
+}
+
 export interface RoomsConfig {
   projects: ProjectConfig[];
   source: 'file' | 'start-directory' | 'none';
   tasks: TasksConfig;
   sessions: SessionsConfig;
+  disk: DiskConfig;
 }
 
 const DEFAULT_TASKS: TasksConfig = { maxActive: 3, split: 'lines' };
@@ -106,6 +116,19 @@ function parseSessions(raw: unknown): SessionsConfig {
       typeof minutes === 'number' && Number.isFinite(minutes) && minutes >= 0
         ? minutes
         : DEFAULT_SESSIONS.hideAfterIdleMinutes,
+  };
+}
+
+function parseDisk(raw: unknown): DiskConfig {
+  const folders = Array.isArray(objectOf(raw).folders) ? (objectOf(raw).folders as unknown[]) : [];
+  return {
+    folders: folders.flatMap((item) => {
+      const entry = typeof item === 'string' ? { path: item } : objectOf(item);
+      const where = textOrNull(entry.path);
+      if (!where) return [];
+      const full = resolveUserPath(where);
+      return [{ label: textOrNull(entry.label) ?? path.basename(full), path: full }];
+    }),
   };
 }
 
@@ -302,16 +325,24 @@ export async function loadRoomsConfig(startDir: string): Promise<RoomsConfig> {
       source: 'file',
       tasks: parseTasks(fromFile.tasks),
       sessions: parseSessions(fromFile.sessions),
+      disk: parseDisk(fromFile.disk),
     };
   }
   const top = await repositoryTopLevel(startDir);
   if (!top)
-    return { projects: [], source: 'none', tasks: DEFAULT_TASKS, sessions: DEFAULT_SESSIONS };
+    return {
+      projects: [],
+      source: 'none',
+      tasks: DEFAULT_TASKS,
+      sessions: DEFAULT_SESSIONS,
+      disk: { folders: [] },
+    };
   const project = parseProject({ root: top });
   return {
     projects: project ? [project] : [],
     source: 'start-directory',
     tasks: DEFAULT_TASKS,
     sessions: DEFAULT_SESSIONS,
+    disk: { folders: [] },
   };
 }

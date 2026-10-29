@@ -2,6 +2,9 @@ import { type KeyboardEvent, useState } from 'react';
 
 import type { OfficeState } from '../office/engine/officeState.js';
 import type { ToolActivity } from '../office/types.js';
+import { drivesSummary } from './disk.js';
+import { DiskDialog } from './DiskDialog.js';
+import { useDiskState } from './diskStore.js';
 import { itemMemory, machineSummary } from './memory.js';
 import { useRoomsState } from './roomsStore.js';
 import { selectTarget, useSelection } from './selectionStore.js';
@@ -62,6 +65,7 @@ interface TaskRailProps {
   agentAwaitingInput: Record<number, boolean>;
   agentTools: Record<number, ToolActivity[]>;
   onNewTask?: () => void;
+  readOnly?: boolean;
 }
 
 export function TaskRail({
@@ -71,6 +75,7 @@ export function TaskRail({
   agentAwaitingInput,
   agentTools,
   onNewTask,
+  readOnly = false,
 }: TaskRailProps) {
   const { items } = useWorkItems(
     officeState,
@@ -82,6 +87,8 @@ export function TaskRail({
   const { github, rooms, memory } = useRoomsState();
   const sessions = useSessionsInfo();
   const machine = machineSummary(memory);
+  const drives = drivesSummary(useDiskState().drives);
+  const [diskOpen, setDiskOpen] = useState(false);
   const { maxActive, active, splitting, freeRooms } = useTasksState();
   const selection = useSelection();
   const [collapsed, setCollapsed] = useState(false);
@@ -196,6 +203,18 @@ export function TaskRail({
             {machine.text}
           </div>
         )}
+        {drives && (
+          <button
+            type="button"
+            onClick={() => setDiskOpen(true)}
+            className={`block w-full text-left text-ui-xs mt-2 truncate border-0 bg-transparent p-0 cursor-pointer hover:underline ${drives.low ? 'text-state-attention' : 'text-ink-muted'}`}
+            title="Free space of each drive. Click to see what fills them."
+            data-testid="disk-summary"
+          >
+            {drives.text}
+          </button>
+        )}
+        <DiskDialog open={diskOpen} onClose={() => setDiskOpen(false)} canMeasure={!readOnly} />
       </div>
       <div
         className="flex-1 min-h-0 overflow-y-auto pixel-scrollbar px-8 py-8 outline-none"

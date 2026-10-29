@@ -244,7 +244,7 @@ export function readSessionProcesses(dir: string): SessionProcess[] {
 export function parseWindowsSample(json: string): ProcessSample[] | null {
   let raw: unknown;
   try {
-    raw = JSON.parse(json.replace(/^﻿/, '').trim());
+    raw = JSON.parse(json.replace(/^\uFEFF/, '').trim());
   } catch {
     return null;
   }

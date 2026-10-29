@@ -53,7 +53,8 @@ export type ServerMessage =
   | TasksState
   | SessionsInfo
   | ReplyResult
-  | SessionMessages;
+  | SessionMessages
+  | DiskState;
 
 export type ClientMessage =
   | WebviewReady
@@ -90,7 +91,8 @@ export type ClientMessage =
   | ReplyToSession
   | OpenSessionTerminal
   | GetSessionMessages
-  | AnswerPermission;
+  | AnswerPermission
+  | MeasureDisk;
 
 export interface ProviderCapabilities {
   type: 'providerCapabilities';
@@ -537,6 +539,39 @@ export interface ConversationMessage {
 
 export type ConversationRole = 'user' | 'assistant';
 
+export interface DiskState {
+  type: 'diskState';
+  scanning: boolean;
+  measuredAt: number | null;
+  drives: DriveSpace[];
+  worktrees: WorktreeDisk[];
+  folders: FolderDisk[];
+}
+
+export interface DriveSpace {
+  root: string;
+  totalBytes: number;
+  freeBytes: number;
+}
+
+export interface WorktreeDisk {
+  label: string;
+  project: string;
+  path: string;
+  totalBytes: number;
+  modulesBytes: number;
+  buildBytes: number;
+  gitBytes: number;
+  measuredAt: number;
+}
+
+export interface FolderDisk {
+  label: string;
+  path: string;
+  bytes: number | null;
+  measuredAt: number;
+}
+
 export interface WebviewReady {
   type: 'webviewReady';
 }
@@ -724,4 +759,8 @@ export interface AnswerPermission {
   type: 'answerPermission';
   agentId: number;
   allow: boolean;
+}
+
+export interface MeasureDisk {
+  type: 'measureDisk';
 }

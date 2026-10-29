@@ -30,6 +30,7 @@ worktree-office answers them on one screen. Each worktree becomes a room, each s
 - [x] A task box that starts new tasks in free worktrees, with a limit on how many run at once
 - [x] Tokens used by each task
 - [x] RAM used by each room and each session, and the free memory of the computer
+- [x] Disk used by each worktree, and the free space of each drive
 - [x] Session titles and idle time on the character labels
 - [x] System notifications when something new needs you
 - [x] Demo mode with a fictional project
@@ -144,6 +145,24 @@ Every 20 seconds the office reads the processes of the computer and shows the RA
 - the task panel shows the figure of the room, with the session's own in its tooltip.
 
 Each process counts once. It belongs to the session that started it, or else to the room its command line points into. Sub-agents run inside their session, so they count there. The figure is the working set the system reports, so memory shared between processes counts in each of them. On Windows the office reads the processes through one PowerShell kept open, which uses about 100 MB; on macOS and Linux it runs `ps`.
+
+### Disk
+
+The top of the task list also shows the free space of each drive the office works on: the drives of the worktrees and of your home folder. It turns amber when a drive has less than a tenth free. Click it to see every worktree of your projects, rooms or not, from the largest down, split into `node_modules`, builds (`.next`, `.turbo` and the like), `.git` and the rest. The task panel shows the size of its room, with the split in its tooltip.
+
+The office measures the worktrees two minutes after it starts, then every 30 minutes, and **Measure now** does it on the spot. Links are not followed, so a package linked into `node_modules` counts once, and a worktree nested in another counts only in its own row. On Windows each measurement runs in a PowerShell that closes when it ends; on macOS and Linux the office walks the folders itself.
+
+To watch other folders, such as a shared build cache, list them at the top level of `projects.json`:
+
+```json
+{
+  "disk": {
+    "folders": [{ "label": "turbo cache", "path": "~/code/.turbo/cache" }]
+  }
+}
+```
+
+A folder can also be a plain path, labeled with its name. A folder that does not exist shows as "not found".
 
 ### Releasing a worktree
 

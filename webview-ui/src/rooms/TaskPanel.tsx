@@ -7,6 +7,8 @@ import type { ToolActivity } from '../office/types.js';
 import type { TerminalConnectionStatus } from '../terminal/terminalClient.js';
 import { closeConversation } from './conversationStore.js';
 import { ConversationView } from './ConversationView.js';
+import { diskBytes, measuredAgo, worktreeBreakdown } from './disk.js';
+import { useDiskState } from './diskStore.js';
 import { panelMemory } from './memory.js';
 import { NoSessionView } from './NoSessionView.js';
 import { requestRelease } from './releaseStore.js';
@@ -73,6 +75,7 @@ export function TaskPanel({
   const sessions = useSessionsInfo();
   const { rooms } = useRoomsState();
   const { tasks } = useTasksState();
+  const { worktrees } = useDiskState();
   const { result, sentTo } = useReplyState();
   const { agentId, open, full } = selection;
   const tab: PanelTab = terminalsAvailable ? selection.tab : 'conversation';
@@ -135,6 +138,7 @@ export function TaskPanel({
       : sessionStateView(session, need?.kind ?? null, busy, character?.isActive);
   const checks = room?.pr?.checks ? CHECKS_ICON[room.pr.checks] : undefined;
   const memory = panelMemory(room, session);
+  const disk = roomLabel ? worktrees.find((entry) => entry.label === roomLabel) : undefined;
   const title =
     (room?.pr && cleanTitle(room.pr.title)) ||
     session?.title ||
@@ -211,6 +215,18 @@ export function TaskPanel({
                   memory
                 </span>
                 {memory.text}
+              </span>
+            )}
+            {disk && (
+              <span
+                className="inline-flex items-center gap-4 text-ink-muted"
+                title={`On disk: ${worktreeBreakdown(disk)}, ${measuredAgo(disk.measuredAt)}.`}
+                data-testid="panel-disk"
+              >
+                <span className="material-symbols-sharp text-[15px]" aria-hidden="true">
+                  hard_drive
+                </span>
+                {diskBytes(disk.totalBytes)}
               </span>
             )}
             {!present && agentId !== null && (

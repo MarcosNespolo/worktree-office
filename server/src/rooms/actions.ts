@@ -6,6 +6,7 @@ import {
   PERMISSION_DENY_KEYS,
 } from './constants.js';
 import { readConversation } from './conversation.js';
+import type { DiskTracker } from './disk.js';
 import { parseReleaseRequest, type ReleaseDeps, releaseRoom } from './release.js';
 import type { ReplyOutcome } from './reply.js';
 import type { SessionInfoTracker } from './sessionInfo.js';
@@ -15,6 +16,7 @@ import { isUploadPath } from './uploads.js';
 export interface RoomActionDeps extends ReleaseDeps {
   tasks: TaskRunner;
   sessionInfo: SessionInfoTracker;
+  disk: DiskTracker;
   replyToSession: (agentId: number, text: string, images: string[]) => Promise<ReplyOutcome>;
   openSessionTerminal: (agentId: number) => Promise<ReplyOutcome>;
 }
@@ -95,7 +97,11 @@ export function createRoomActions(deps: RoomActionDeps): ExtraClientMessageHandl
         reply(deps.status.snapshot() as unknown as Record<string, unknown>);
         reply(deps.tasks.snapshot() as unknown as Record<string, unknown>);
         reply(deps.sessionInfo.snapshot() as unknown as Record<string, unknown>);
+        reply(deps.disk.snapshot() as unknown as Record<string, unknown>);
         return false;
+      case 'measureDisk':
+        deps.disk.measureNow();
+        return true;
       case 'releaseRoom':
         release(msg, reply);
         return true;

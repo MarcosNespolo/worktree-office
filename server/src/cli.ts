@@ -40,6 +40,7 @@ import { createRoomActions } from './rooms/actions.js';
 import { SessionActivity } from './rooms/activity.js';
 import { defaultStages, loadRoomsConfig } from './rooms/config.js';
 import { cleanupDemo, DemoDriver, demoPullRequests, prepareDemo } from './rooms/demo.js';
+import { DiskTracker } from './rooms/disk.js';
 import { dropParentSessionMarkers } from './rooms/env.js';
 import { applyFirstRunSettings } from './rooms/firstRun.js';
 import { SessionFollower } from './rooms/follow.js';
@@ -453,6 +454,7 @@ async function main(): Promise<void> {
     setDirectoryNameResolver(({ cwd: sessionCwd }) => rooms.directoryNameFor(sessionCwd));
     const follower = new SessionFollower(store, rooms);
     const memory = new MemoryTracker(store, rooms);
+    const disk = new DiskTracker(store, rooms, roomsConfig.disk);
     const status = new StatusTracker(
       store,
       rooms,
@@ -484,6 +486,7 @@ async function main(): Promise<void> {
     console.log(`[worktree-office] ${rooms.describe(roomsConfig.source)}`);
     await status.start();
     memory.start();
+    disk.start();
     const tasks = new TaskRunner({
       store,
       runtime,
@@ -515,6 +518,7 @@ async function main(): Promise<void> {
       status,
       tasks,
       sessionInfo,
+      disk,
       hasTerminal: (agentId) => ptyManager.has(agentId),
       closeAgent: (agentId) => {
         ptyManager.dispose(agentId);
@@ -573,6 +577,7 @@ async function main(): Promise<void> {
       tasks.stop();
       status.stop();
       memory.stop();
+      disk.stop();
       rooms.stop();
       runtime.dispose();
       server.stop();
