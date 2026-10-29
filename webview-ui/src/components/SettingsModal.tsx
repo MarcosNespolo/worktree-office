@@ -179,16 +179,18 @@ export function SettingsModal({
           </Button>
         </div>
       ))}
-      <Checkbox
-        label="Sound Notifications"
-        checked={soundLocal}
-        onChange={() => {
-          const newVal = !isSoundEnabled();
-          setSoundEnabled(newVal);
-          setSoundLocal(newVal);
-          transport.send({ type: 'setSoundEnabled', enabled: newVal });
-        }}
-      />
+      {!isBrowserRuntime && (
+        <Checkbox
+          label="Sound Notifications"
+          checked={soundLocal}
+          onChange={() => {
+            const newVal = !isSoundEnabled();
+            setSoundEnabled(newVal);
+            setSoundLocal(newVal);
+            transport.send({ type: 'setSoundEnabled', enabled: newVal });
+          }}
+        />
+      )}
       <Checkbox
         label="Watch All Sessions"
         checked={watchAllSessions}

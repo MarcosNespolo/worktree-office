@@ -48,7 +48,7 @@ node dist/cli.js --port 3100
 
 Want to look around first? `node dist/cli.js --demo` opens a fictional project with six worktrees, simulated agents and fictional pull requests. It runs in a temporary folder and never touches your hooks, sessions or settings.
 
-Open the URL printed in the terminal. It carries an access token, so treat it like a password.
+Open the URL printed in the terminal. It carries an access token, so treat it like a password. The office in the browser is silent: it plays no chime when a session finishes or asks for permission.
 
 On first run, the office asks for permission to add hooks to `~/.claude/settings.json`, so it can follow your sessions as they happen. You can remove them anytime from Settings.
 
@@ -150,6 +150,8 @@ Every release is logged in `~/.worktree-office/release.log`. The main checkout i
 | `release` | `{ "mode": "remove", "keep": ["~/code/acme-web-slot*"], "before": ["npm run clean"] }`. `mode` is `detach` (default: keep the folder, check out the default branch) or `remove` (delete the worktree). With `remove`, worktrees matching the `keep` globs are detached instead, which suits worktrees you reuse for every task. `before` commands run in the worktree, in the platform shell. |
 
 ### Starting tasks
+
+To only watch, start the office with `--no-terminal`. **New**, the reply box and the terminals go away, and the office keeps following the sessions you run in your editor or terminal: their rooms, stages, conversations and pull requests. Releasing a worktree still works.
 
 Click **New** at the top of the task list, describe one or more tasks and press **Start** (or Ctrl+Enter). The line under the list title says how many tasks are running and which worktrees are free. Separate tasks with a blank line, or write them as a list. Each task:
 

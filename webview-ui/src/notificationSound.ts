@@ -12,7 +12,7 @@ import {
   PERMISSION_NOTE_DURATION_SEC,
   PERMISSION_VOLUME,
 } from './constants.js';
-import { isE2E } from './runtime.js';
+import { isBrowserRuntime, isE2E } from './runtime.js';
 
 let soundEnabled = true;
 let audioCtx: AudioContext | null = null;
@@ -65,7 +65,7 @@ function playNote(
 
 export async function playDoneSound(): Promise<void> {
   recordSoundForTests('done');
-  if (!soundEnabled) return;
+  if (!soundEnabled || isBrowserRuntime) return;
   try {
     if (!audioCtx) {
       audioCtx = new AudioContext();
@@ -84,7 +84,7 @@ export async function playDoneSound(): Promise<void> {
 
 export async function playPermissionSound(): Promise<void> {
   recordSoundForTests('permission');
-  if (!soundEnabled) return;
+  if (!soundEnabled || isBrowserRuntime) return;
   try {
     if (!audioCtx) {
       audioCtx = new AudioContext();
