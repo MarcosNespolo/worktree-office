@@ -281,7 +281,19 @@ export function TaskPanel({
           className={tab === 'conversation' ? 'absolute inset-0 flex flex-col' : 'hidden'}
           data-testid="panel-conversation"
         >
-          {agentId !== null ? (
+          {agentId !== null && readOnly ? (
+            <div
+              className="flex-1 flex flex-col items-center justify-center gap-10 px-24 text-center"
+              data-testid="conversation-private"
+            >
+              <div className="text-ui-md font-semibold">
+                The conversation is not shown in this view.
+              </div>
+              <div className="text-ui-sm text-ink-muted max-w-[440px]">
+                Open the office with its tokened URL, the one the CLI printed, to read it.
+              </div>
+            </div>
+          ) : agentId !== null ? (
             <ConversationView
               agentId={agentId}
               inOffice={inOffice}
