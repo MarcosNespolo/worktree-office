@@ -56,6 +56,7 @@ interface TaskPanelProps {
   onResizeStart: (event: ReactMouseEvent) => void;
   onTerminalStatus: (agentId: number, status: TerminalConnectionStatus) => void;
   lastOpenedTerminal: { agentId: number; seq: number } | null;
+  readOnly?: boolean;
 }
 
 export function TaskPanel({
@@ -70,6 +71,7 @@ export function TaskPanel({
   onResizeStart,
   onTerminalStatus,
   lastOpenedTerminal,
+  readOnly = false,
 }: TaskPanelProps) {
   const selection = useSelection();
   const sessions = useSessionsInfo();
@@ -262,7 +264,7 @@ export function TaskPanel({
           </button>
         ))}
         <div className="flex-1" />
-        {room && room.releasable && (room.branch !== null || room.serverUp) && (
+        {room && room.releasable && !readOnly && (room.branch !== null || room.serverUp) && (
           <UiButton
             size="sm"
             variant="ghost"

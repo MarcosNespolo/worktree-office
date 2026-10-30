@@ -771,6 +771,7 @@ function App() {
               onResizeStart={terminalDrawer.onResizeStart}
               onTerminalStatus={terminalDrawer.onStatusChange}
               lastOpenedTerminal={terminalDrawer.lastOpened}
+              readOnly={officeReadOnly}
             />
           )}
         </>
